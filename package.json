@@ -1,0 +1,27 @@
+{
+  "name": "deepstack",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.28.2",
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm --filter web build",
+    "typecheck": "pnpm --filter web typecheck",
+    "lint": "pnpm --filter web lint",
+    "test:e2e": "playwright test",
+    "test:unit": "node --experimental-strip-types --test tests/presentation.test.ts",
+    "api:types": "uv run --project apps/api python apps/api/export_openapi.py && openapi-typescript apps/api/openapi.json -o apps/web/lib/api.generated.ts"
+  },
+  "pnpm": {
+    "overrides": {
+      "better-auth": "1.7.14",
+      "@better-auth/core": "1.7.14",
+      "@better-auth/oauth-provider": "1.7.14",
+      "zod@4.5.4": "4.6.7"
+    }
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "openapi-typescript": "^7.10.1"
+  }
+}

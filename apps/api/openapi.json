@@ -1,0 +1,2401 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Deepstack",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_api_v1_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/guest": {
+      "post": {
+        "summary": "Guest",
+        "operationId": "guest_api_v1_guest_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuestResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions": {
+      "get": {
+        "summary": "Sessions",
+        "operationId": "sessions_api_v1_sessions_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionList"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create",
+        "operationId": "create_api_v1_sessions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSession"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{sid}": {
+      "get": {
+        "summary": "Read",
+        "operationId": "read_api_v1_sessions__sid__get",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          },
+          {
+            "name": "after_event_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "After Event Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{sid}/commands": {
+      "post": {
+        "summary": "Mutate",
+        "operationId": "mutate_api_v1_sessions__sid__commands_post",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Command"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{sid}/hands": {
+      "get": {
+        "summary": "Hands",
+        "operationId": "hands_api_v1_sessions__sid__hands_get",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HandList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{sid}/hands/{hid}": {
+      "get": {
+        "summary": "Replay",
+        "operationId": "replay_api_v1_sessions__sid__hands__hid__get",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          },
+          {
+            "name": "hid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Hid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Replay"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{sid}/ledger": {
+      "get": {
+        "summary": "Ledger",
+        "operationId": "ledger_api_v1_sessions__sid__ledger_get",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LedgerList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me": {
+      "get": {
+        "summary": "Me",
+        "operationId": "me_api_v1_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Update Me",
+        "operationId": "update_me_api_v1_me_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/claim": {
+      "post": {
+        "summary": "Claim",
+        "operationId": "claim_api_v1_me_claim_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/guest/reset": {
+      "post": {
+        "summary": "Reset Guest",
+        "operationId": "reset_guest_api_v1_guest_reset_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuestResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/hands": {
+      "get": {
+        "summary": "Review Hands",
+        "operationId": "review_hands_api_v1_hands_get",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          },
+          {
+            "name": "saved",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Saved"
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 36500,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Days"
+            }
+          },
+          {
+            "name": "big_blind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Big Blind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewHands"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ranges/expand": {
+      "post": {
+        "summary": "Expand Range",
+        "operationId": "expand_range_api_v1_ranges_expand_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RangeExpansion"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/hands/{hid}": {
+      "get": {
+        "summary": "Review Hand",
+        "operationId": "review_hand_api_v1_hands__hid__get",
+        "parameters": [
+          {
+            "name": "hid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Hid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Replay"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/hands/{hid}/annotation": {
+      "post": {
+        "summary": "Annotate",
+        "operationId": "annotate_api_v1_hands__hid__annotation_post",
+        "parameters": [
+          {
+            "name": "hid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Hid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Annotation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HandSummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/hands/{hid}/analysis": {
+      "post": {
+        "summary": "Decision Analysis",
+        "operationId": "decision_analysis_api_v1_hands__hid__analysis_post",
+        "parameters": [
+          {
+            "name": "hid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Hid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalysisRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/hands/{hid}/export": {
+      "get": {
+        "summary": "Export Hand",
+        "operationId": "export_hand_api_v1_hands__hid__export_get",
+        "parameters": [
+          {
+            "name": "hid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Hid"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(text|json)$",
+              "default": "text",
+              "title": "Format"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Action-Input": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "fold",
+              "check",
+              "call",
+              "raise_to"
+            ],
+            "title": "Kind"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1000000000000.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "title": "Action"
+      },
+      "Action-Output": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "fold",
+              "check",
+              "call",
+              "raise_to"
+            ],
+            "title": "Kind"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1000000000000.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "amount"
+        ],
+        "title": "Action"
+      },
+      "AnalysisRequest": {
+        "properties": {
+          "decision": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Decision"
+          },
+          "ranges": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "maxProperties": 8,
+            "title": "Ranges"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "decision"
+        ],
+        "title": "AnalysisRequest"
+      },
+      "AnalysisResult": {
+        "properties": {
+          "equity": {
+            "type": "number",
+            "title": "Equity"
+          },
+          "uncertainty": {
+            "type": "number",
+            "title": "Uncertainty"
+          },
+          "samples": {
+            "type": "integer",
+            "title": "Samples"
+          },
+          "call_threshold": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Call Threshold"
+          },
+          "call_amount": {
+            "type": "integer",
+            "maximum": 9000000000000000.0,
+            "minimum": 0.0,
+            "title": "Call Amount"
+          },
+          "pot": {
+            "type": "integer",
+            "maximum": 9000000000000000.0,
+            "minimum": 0.0,
+            "title": "Pot"
+          },
+          "effective_stack": {
+            "type": "integer",
+            "maximum": 9000000000000000.0,
+            "minimum": 0.0,
+            "title": "Effective Stack"
+          },
+          "ranges": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Ranges"
+          },
+          "explanation": {
+            "type": "string",
+            "title": "Explanation"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "equity",
+          "uncertainty",
+          "samples",
+          "call_threshold",
+          "call_amount",
+          "pot",
+          "effective_stack",
+          "ranges",
+          "explanation"
+        ],
+        "title": "AnalysisResult"
+      },
+      "Annotation": {
+        "properties": {
+          "bookmarked": {
+            "type": "boolean",
+            "title": "Bookmarked"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Note",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "bookmarked"
+        ],
+        "title": "Annotation"
+      },
+      "Command": {
+        "properties": {
+          "command_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Command Id"
+          },
+          "expected_version": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Expected Version"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "act",
+              "next_hand",
+              "advance",
+              "top_up",
+              "set_seat",
+              "note",
+              "end"
+            ],
+            "title": "Kind"
+          },
+          "action": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Action-Input"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "seat": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 8.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seat"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1000000000000.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "sitting_out": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sitting Out"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "command_id",
+          "expected_version",
+          "kind"
+        ],
+        "title": "Command"
+      },
+      "CommandResult": {
+        "properties": {
+          "snapshot": {
+            "$ref": "#/components/schemas/Snapshot"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/PublicEvent"
+            },
+            "type": "array",
+            "title": "Events"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "snapshot",
+          "events"
+        ],
+        "title": "CommandResult"
+      },
+      "CreateSession": {
+        "properties": {
+          "command_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Command Id"
+          },
+          "config": {
+            "$ref": "#/components/schemas/TableConfig-Input"
+          },
+          "previous_session_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Session Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "command_id"
+        ],
+        "title": "CreateSession"
+      },
+      "DecisionContext": {
+        "properties": {
+          "event_id": {
+            "type": "integer",
+            "title": "Event Id"
+          },
+          "view": {
+            "$ref": "#/components/schemas/TableView"
+          },
+          "legal": {
+            "$ref": "#/components/schemas/LegalActions"
+          },
+          "effective_stack": {
+            "type": "integer",
+            "maximum": 9000000000000000.0,
+            "minimum": 0.0,
+            "title": "Effective Stack"
+          },
+          "big_blind": {
+            "type": "integer",
+            "maximum": 1000000000000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Big Blind",
+            "default": 200
+          },
+          "action": {
+            "$ref": "#/components/schemas/Action-Output"
+          },
+          "side_pots": {
+            "type": "boolean",
+            "title": "Side Pots",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "event_id",
+          "view",
+          "legal",
+          "effective_stack",
+          "big_blind",
+          "action",
+          "side_pots"
+        ],
+        "title": "DecisionContext"
+      },
+      "GuestResult": {
+        "properties": {
+          "ready": {
+            "type": "boolean",
+            "title": "Ready"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ready"
+        ],
+        "title": "GuestResult"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HandList": {
+        "properties": {
+          "hands": {
+            "items": {
+              "$ref": "#/components/schemas/HandSummary"
+            },
+            "type": "array",
+            "title": "Hands"
+          },
+          "next_before": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Before"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "hands",
+          "next_before"
+        ],
+        "title": "HandList"
+      },
+      "HandSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "board": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Board"
+          },
+          "hero_cards": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Hero Cards"
+          },
+          "profit": {
+            "type": "integer",
+            "title": "Profit"
+          },
+          "pot": {
+            "type": "integer",
+            "maximum": 9000000000000000.0,
+            "minimum": 0.0,
+            "title": "Pot"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "session_id": {
+            "type": "string",
+            "title": "Session Id",
+            "default": ""
+          },
+          "position": {
+            "type": "string",
+            "title": "Position",
+            "default": ""
+          },
+          "big_blind": {
+            "type": "integer",
+            "title": "Big Blind",
+            "default": 200
+          },
+          "players": {
+            "type": "integer",
+            "title": "Players",
+            "default": 6
+          },
+          "bookmarked": {
+            "type": "boolean",
+            "title": "Bookmarked",
+            "default": false
+          },
+          "note": {
+            "type": "string",
+            "title": "Note",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "number",
+          "board",
+          "hero_cards",
+          "profit",
+          "pot",
+          "created_at",
+          "session_id",
+          "position",
+          "big_blind",
+          "players",
+          "bookmarked",
+          "note"
+        ],
+        "title": "HandSummary"
+      },
+      "LedgerEntry": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "seat": {
+            "type": "integer",
+            "title": "Seat"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "amount": {
+            "type": "integer",
+            "title": "Amount"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "seat",
+          "kind",
+          "amount",
+          "created_at"
+        ],
+        "title": "LedgerEntry"
+      },
+      "LedgerList": {
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/LedgerEntry"
+            },
+            "type": "array",
+            "title": "Entries"
+          },
+          "next_before": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Before"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "entries",
+          "next_before"
+        ],
+        "title": "LedgerList"
+      },
+      "LegalActions": {
+        "properties": {
+          "fold": {
+            "type": "boolean",
+            "title": "Fold",
+            "default": false
+          },
+          "check": {
+            "type": "boolean",
+            "title": "Check",
+            "default": false
+          },
+          "call": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 9000000000000000.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Call"
+          },
+          "min_raise_to": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1000000000000.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Raise To"
+          },
+          "max_raise_to": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1000000000000.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Raise To"
+          },
+          "presets": {
+            "items": {
+              "$ref": "#/components/schemas/Preset"
+            },
+            "type": "array",
+            "title": "Presets"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "fold",
+          "check",
+          "call",
+          "min_raise_to",
+          "max_raise_to",
+          "presets"
+        ],
+        "title": "LegalActions"
+      },
+      "Observations": {
+        "properties": {
+          "hands": {
+            "type": "integer",
+            "title": "Hands",
+            "default": 0
+          },
+          "vpip": {
+            "type": "integer",
+            "title": "Vpip",
+            "default": 0
+          },
+          "pfr": {
+            "type": "integer",
+            "title": "Pfr",
+            "default": 0
+          },
+          "three_bet": {
+            "type": "integer",
+            "title": "Three Bet",
+            "default": 0
+          },
+          "three_bet_opportunities": {
+            "type": "integer",
+            "title": "Three Bet Opportunities",
+            "default": 0
+          },
+          "bets_raises": {
+            "type": "integer",
+            "title": "Bets Raises",
+            "default": 0
+          },
+          "calls": {
+            "type": "integer",
+            "title": "Calls",
+            "default": 0
+          },
+          "folds_to_bet": {
+            "type": "integer",
+            "title": "Folds To Bet",
+            "default": 0
+          },
+          "faced_bet": {
+            "type": "integer",
+            "title": "Faced Bet",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "hands",
+          "vpip",
+          "pfr",
+          "three_bet",
+          "three_bet_opportunities",
+          "bets_raises",
+          "calls",
+          "folds_to_bet",
+          "faced_bet"
+        ],
+        "title": "Observations"
+      },
+      "Preferences-Input": {
+        "properties": {
+          "bb": {
+            "type": "boolean",
+            "title": "Bb",
+            "default": false
+          },
+          "pace": {
+            "type": "string",
+            "enum": [
+              "deliberate",
+              "brisk",
+              "manual"
+            ],
+            "title": "Pace",
+            "default": "deliberate"
+          },
+          "fourColor": {
+            "type": "boolean",
+            "title": "Fourcolor",
+            "default": false
+          },
+          "reducedMotion": {
+            "type": "boolean",
+            "title": "Reducedmotion",
+            "default": false
+          },
+          "actionLog": {
+            "type": "boolean",
+            "title": "Actionlog",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "Preferences"
+      },
+      "Preferences-Output": {
+        "properties": {
+          "bb": {
+            "type": "boolean",
+            "title": "Bb",
+            "default": false
+          },
+          "pace": {
+            "type": "string",
+            "enum": [
+              "deliberate",
+              "brisk",
+              "manual"
+            ],
+            "title": "Pace",
+            "default": "deliberate"
+          },
+          "fourColor": {
+            "type": "boolean",
+            "title": "Fourcolor",
+            "default": false
+          },
+          "reducedMotion": {
+            "type": "boolean",
+            "title": "Reducedmotion",
+            "default": false
+          },
+          "actionLog": {
+            "type": "boolean",
+            "title": "Actionlog",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "bb",
+          "pace",
+          "fourColor",
+          "reducedMotion",
+          "actionLog"
+        ],
+        "title": "Preferences"
+      },
+      "Preset": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "amount": {
+            "type": "integer",
+            "maximum": 1000000000000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Amount"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "label",
+          "amount"
+        ],
+        "title": "Preset"
+      },
+      "Profile": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "preferences": {
+            "$ref": "#/components/schemas/Preferences-Output"
+          },
+          "table_defaults": {
+            "$ref": "#/components/schemas/TableConfig-Output"
+          },
+          "authenticated": {
+            "type": "boolean",
+            "title": "Authenticated",
+            "default": false
+          },
+          "auth_available": {
+            "type": "boolean",
+            "title": "Auth Available",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "preferences",
+          "table_defaults",
+          "authenticated",
+          "auth_available"
+        ],
+        "title": "Profile"
+      },
+      "ProfileUpdate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "preferences": {
+            "$ref": "#/components/schemas/Preferences-Input"
+          },
+          "table_defaults": {
+            "$ref": "#/components/schemas/TableConfig-Input"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "ProfileUpdate"
+      },
+      "PublicEvent": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "view": {
+            "$ref": "#/components/schemas/TableView"
+          },
+          "seat": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seat"
+          },
+          "street": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Street"
+          },
+          "action": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 9000000000000000.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "to_amount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 9000000000000000.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Amount"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "text",
+          "view",
+          "seat",
+          "street",
+          "action",
+          "amount",
+          "to_amount"
+        ],
+        "title": "PublicEvent"
+      },
+      "RangeExpansion": {
+        "properties": {
+          "hands": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Hands"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "hands"
+        ],
+        "title": "RangeExpansion"
+      },
+      "RangeRequest": {
+        "properties": {
+          "range": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Range"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "range"
+        ],
+        "title": "RangeRequest"
+      },
+      "Replay": {
+        "properties": {
+          "hand": {
+            "$ref": "#/components/schemas/HandSummary"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/PublicEvent"
+            },
+            "type": "array",
+            "title": "Events"
+          },
+          "decisions": {
+            "items": {
+              "$ref": "#/components/schemas/DecisionContext"
+            },
+            "type": "array",
+            "title": "Decisions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "hand",
+          "events",
+          "decisions"
+        ],
+        "title": "Replay"
+      },
+      "ReviewHands": {
+        "properties": {
+          "hands": {
+            "items": {
+              "$ref": "#/components/schemas/HandSummary"
+            },
+            "type": "array",
+            "title": "Hands"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "hands",
+          "next_cursor"
+        ],
+        "title": "ReviewHands"
+      },
+      "SeatView": {
+        "properties": {
+          "seat": {
+            "type": "integer",
+            "title": "Seat"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "stack": {
+            "type": "integer",
+            "maximum": 9000000000000000.0,
+            "minimum": 0.0,
+            "title": "Stack"
+          },
+          "starting_stack": {
+            "type": "integer",
+            "maximum": 1000000000000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Starting Stack"
+          },
+          "bet": {
+            "type": "integer",
+            "maximum": 9000000000000000.0,
+            "minimum": 0.0,
+            "title": "Bet",
+            "default": 0
+          },
+          "cards": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Cards"
+          },
+          "in_hand": {
+            "type": "boolean",
+            "title": "In Hand",
+            "default": false
+          },
+          "folded": {
+            "type": "boolean",
+            "title": "Folded",
+            "default": false
+          },
+          "sitting_out": {
+            "type": "boolean",
+            "title": "Sitting Out",
+            "default": false
+          },
+          "dealer": {
+            "type": "boolean",
+            "title": "Dealer",
+            "default": false
+          },
+          "blind": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "SB",
+                  "BB"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blind"
+          },
+          "position": {
+            "type": "string",
+            "title": "Position",
+            "default": ""
+          },
+          "last_action": {
+            "type": "string",
+            "title": "Last Action",
+            "default": ""
+          },
+          "winnings": {
+            "type": "integer",
+            "maximum": 9000000000000000.0,
+            "minimum": 0.0,
+            "title": "Winnings",
+            "default": 0
+          },
+          "note": {
+            "type": "string",
+            "title": "Note",
+            "default": ""
+          },
+          "observed": {
+            "$ref": "#/components/schemas/Observations"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "seat",
+          "name",
+          "stack",
+          "starting_stack",
+          "bet",
+          "cards",
+          "in_hand",
+          "folded",
+          "sitting_out",
+          "dealer",
+          "blind",
+          "position",
+          "last_action",
+          "winnings",
+          "note",
+          "observed"
+        ],
+        "title": "SeatView"
+      },
+      "SessionList": {
+        "properties": {
+          "sessions": {
+            "items": {
+              "$ref": "#/components/schemas/SessionSummary"
+            },
+            "type": "array",
+            "title": "Sessions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "sessions"
+        ],
+        "title": "SessionList"
+      },
+      "SessionSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "hands": {
+            "type": "integer",
+            "title": "Hands"
+          },
+          "profit": {
+            "type": "integer",
+            "title": "Profit"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TableConfig-Output"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "hands",
+          "profit",
+          "created_at",
+          "config"
+        ],
+        "title": "SessionSummary"
+      },
+      "Snapshot": {
+        "properties": {
+          "hand_number": {
+            "type": "integer",
+            "title": "Hand Number"
+          },
+          "street": {
+            "type": "string",
+            "title": "Street"
+          },
+          "board": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Board"
+          },
+          "pot": {
+            "type": "integer",
+            "maximum": 9000000000000000.0,
+            "minimum": 0.0,
+            "title": "Pot"
+          },
+          "pots": {
+            "items": {
+              "type": "integer",
+              "maximum": 9000000000000000.0,
+              "minimum": 0.0
+            },
+            "type": "array",
+            "title": "Pots"
+          },
+          "seats": {
+            "items": {
+              "$ref": "#/components/schemas/SeatView"
+            },
+            "type": "array",
+            "title": "Seats"
+          },
+          "actor": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor"
+          },
+          "complete": {
+            "type": "boolean",
+            "title": "Complete"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "ended"
+            ],
+            "title": "Status"
+          },
+          "config": {
+            "$ref": "#/components/schemas/TableConfig-Output"
+          },
+          "legal": {
+            "$ref": "#/components/schemas/LegalActions"
+          },
+          "needs_advance": {
+            "type": "boolean",
+            "title": "Needs Advance"
+          },
+          "last_event_id": {
+            "type": "integer",
+            "title": "Last Event Id"
+          },
+          "hands_played": {
+            "type": "integer",
+            "title": "Hands Played"
+          },
+          "profit": {
+            "type": "integer",
+            "title": "Profit"
+          },
+          "buy_ins": {
+            "type": "integer",
+            "maximum": 9000000000000000.0,
+            "minimum": 0.0,
+            "title": "Buy Ins"
+          },
+          "cash_outs": {
+            "type": "integer",
+            "maximum": 9000000000000000.0,
+            "minimum": 0.0,
+            "title": "Cash Outs"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "hand_number",
+          "street",
+          "board",
+          "pot",
+          "pots",
+          "seats",
+          "actor",
+          "complete",
+          "message",
+          "id",
+          "version",
+          "status",
+          "config",
+          "legal",
+          "needs_advance",
+          "last_event_id",
+          "hands_played",
+          "profit",
+          "buy_ins",
+          "cash_outs",
+          "created_at"
+        ],
+        "title": "Snapshot"
+      },
+      "TableConfig-Input": {
+        "properties": {
+          "players": {
+            "type": "integer",
+            "maximum": 9.0,
+            "minimum": 2.0,
+            "title": "Players",
+            "default": 6
+          },
+          "small_blind": {
+            "type": "integer",
+            "maximum": 1000000000000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Small Blind",
+            "default": 100
+          },
+          "big_blind": {
+            "type": "integer",
+            "maximum": 1000000000000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Big Blind",
+            "default": 200
+          },
+          "starting_stack": {
+            "type": "integer",
+            "maximum": 1000000000000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Starting Stack",
+            "default": 60000
+          },
+          "seat_stacks": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer",
+                  "maximum": 1000000000000.0,
+                  "exclusiveMinimum": 0.0
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seat Stacks"
+          },
+          "field": {
+            "type": "string",
+            "enum": [
+              "balanced",
+              "soft",
+              "tough"
+            ],
+            "title": "Field",
+            "default": "balanced"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "TableConfig"
+      },
+      "TableConfig-Output": {
+        "properties": {
+          "players": {
+            "type": "integer",
+            "maximum": 9.0,
+            "minimum": 2.0,
+            "title": "Players",
+            "default": 6
+          },
+          "small_blind": {
+            "type": "integer",
+            "maximum": 1000000000000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Small Blind",
+            "default": 100
+          },
+          "big_blind": {
+            "type": "integer",
+            "maximum": 1000000000000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Big Blind",
+            "default": 200
+          },
+          "starting_stack": {
+            "type": "integer",
+            "maximum": 1000000000000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Starting Stack",
+            "default": 60000
+          },
+          "seat_stacks": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer",
+                  "maximum": 1000000000000.0,
+                  "exclusiveMinimum": 0.0
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seat Stacks"
+          },
+          "field": {
+            "type": "string",
+            "enum": [
+              "balanced",
+              "soft",
+              "tough"
+            ],
+            "title": "Field",
+            "default": "balanced"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "players",
+          "small_blind",
+          "big_blind",
+          "starting_stack",
+          "seat_stacks",
+          "field"
+        ],
+        "title": "TableConfig"
+      },
+      "TableView": {
+        "properties": {
+          "hand_number": {
+            "type": "integer",
+            "title": "Hand Number"
+          },
+          "street": {
+            "type": "string",
+            "title": "Street"
+          },
+          "board": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Board"
+          },
+          "pot": {
+            "type": "integer",
+            "maximum": 9000000000000000.0,
+            "minimum": 0.0,
+            "title": "Pot"
+          },
+          "pots": {
+            "items": {
+              "type": "integer",
+              "maximum": 9000000000000000.0,
+              "minimum": 0.0
+            },
+            "type": "array",
+            "title": "Pots"
+          },
+          "seats": {
+            "items": {
+              "$ref": "#/components/schemas/SeatView"
+            },
+            "type": "array",
+            "title": "Seats"
+          },
+          "actor": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor"
+          },
+          "complete": {
+            "type": "boolean",
+            "title": "Complete"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "hand_number",
+          "street",
+          "board",
+          "pot",
+          "pots",
+          "seats",
+          "actor",
+          "complete",
+          "message"
+        ],
+        "title": "TableView"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

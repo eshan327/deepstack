@@ -1,0 +1,121 @@
+name: Checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  DATABASE_URL: postgresql+psycopg://deepstack:deepstack@127.0.0.1:5432/deepstack
+  DATABASE_URL_UNPOOLED: postgresql+psycopg://deepstack:deepstack@127.0.0.1:5432/deepstack
+  POKER_API_ORIGIN: http://127.0.0.1:8000
+
+jobs:
+  backend:
+    name: Rules, accounts, review, and migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: deepstack
+          POSTGRES_PASSWORD: deepstack
+          POSTGRES_DB: deepstack
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U deepstack" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: astral-sh/setup-uv@ae62891fec2bb8e7d6c99fc78c9fec3a63790f8d # v10.0.0
+        with:
+          version: "0.13.6"
+          enable-cache: true
+          cache-dependency-glob: apps/api/uv.lock
+      - run: uv sync --project apps/api --frozen --python 3.12
+      - name: Check dependency compatibility
+        run: uv pip check --python apps/api/.venv/bin/python
+      - name: Migrate, lint, and test
+        working-directory: apps/api
+        run: |
+          uv run alembic upgrade head
+          uv run ruff check .
+          uv run ruff format --check .
+          uv run pytest -q --junitxml=/tmp/backend-tests.xml
+      - name: Seeded poker integrity simulation
+        working-directory: apps/api
+        run: uv run python simulate.py --hands 120 --seed 20261029 --samples 64
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: failure()
+        with:
+          name: backend-failure
+          path: /tmp/backend-tests.xml
+          retention-days: 7
+
+  web:
+    name: API contract, frontend, and real browser flows
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: deepstack
+          POSTGRES_PASSWORD: deepstack
+          POSTGRES_DB: deepstack
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U deepstack" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: pnpm/action-setup@f520eceda224fe1a4aed5a2a27a194379a409996 # v6
+        with:
+          version: "10.28.2"
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: astral-sh/setup-uv@ae62891fec2bb8e7d6c99fc78c9fec3a63790f8d # v10.0.0
+        with:
+          version: "0.13.6"
+          enable-cache: true
+          cache-dependency-glob: apps/api/uv.lock
+      - run: pnpm install --frozen-lockfile
+      - run: uv sync --project apps/api --frozen --python 3.12
+      - name: Check generated API contract
+        run: pnpm api:types && git diff --exit-code apps/api/openapi.json apps/web/lib/api.generated.ts
+      - name: Pacing tests and frontend checks
+        run: |
+          pnpm test:unit
+          pnpm typecheck
+          pnpm lint
+          pnpm build
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Run full browser flows
+        run: |
+          uv run --project apps/api alembic -c apps/api/alembic.ini upgrade head
+          uv run --project apps/api uvicorn main:app --app-dir apps/api --host 127.0.0.1 --port 8000 > /tmp/deepstack-api.log 2>&1 &
+          pnpm --filter web start > /tmp/deepstack-web.log 2>&1 &
+          trap 'kill $(jobs -pr) 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:8000/api/v1/health >/dev/null && curl -fsS http://127.0.0.1:3000 >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8000/api/v1/health >/dev/null
+          curl -fsS http://127.0.0.1:3000 >/dev/null
+          pnpm test:e2e
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: failure()
+        with:
+          name: browser-failure
+          path: |
+            /tmp/deepstack-playwright
+            /tmp/deepstack-qa
+            /tmp/deepstack-api.log
+            /tmp/deepstack-web.log
+          retention-days: 7

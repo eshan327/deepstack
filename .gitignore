@@ -1,0 +1,17 @@
+node_modules/
+.next/
+.venv/
+.vercel/
+.env*
+!.env.example
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+playwright-report/
+test-results/
+*.tsbuildinfo
+.DS_Store
+.agents/
+skills-lock.json
+.vercel
