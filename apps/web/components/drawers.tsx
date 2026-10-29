@@ -414,9 +414,7 @@ function Account({
           />
         </label>
       ))}
-      <h3 className="section-label">
-        {profile?.authenticated ? "Sign-in" : "Keep your seat"}
-      </h3>
+      <h3 className="section-label">Sign-in</h3>
       {profile?.authenticated ? (
         <button
           className="secondary full"
@@ -433,9 +431,6 @@ function Account({
         </button>
       ) : (
         <>
-          <p className="panel-intro">
-            Save your history, notes, and preferences across devices.
-          </p>
           <button
             className="secondary full"
             disabled={busy || !profile?.auth_available}
@@ -461,9 +456,7 @@ function Account({
                   callbackURL: window.location.origin,
                 });
                 if (result.error) throw new Error(result.error.message);
-                setMessage(
-                  "Check your email for a sign-in link. You can keep playing here.",
-                );
+                setMessage("Sign-in link sent.");
               });
             }}
           >
@@ -484,11 +477,9 @@ function Account({
               Send sign-in link
             </button>
           </form>
-          <p className="muted small">
-            {profile?.auth_available
-              ? "Your guest history comes with you when you sign in."
-              : "Account sign-in is awaiting provider setup. Guest play and saved history work on this browser."}
-          </p>
+          {!profile?.auth_available && (
+            <p className="muted small">Sign-in unavailable.</p>
+          )}
         </>
       )}
       {message && (

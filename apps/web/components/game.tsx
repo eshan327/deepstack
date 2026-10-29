@@ -382,7 +382,7 @@ export default function Game() {
               aria-label="Action log"
               aria-pressed={preferences.actionLog}
               onClick={() => {
-                if (window.matchMedia("(max-width: 900px)").matches)
+                if (window.matchMedia("(max-width: 1200px)").matches)
                   setPanel("log");
                 else
                   updatePreferences({
@@ -542,8 +542,7 @@ export default function Game() {
                 <span className="welcome-mark" aria-hidden="true">
                   ♠
                 </span>
-                <h1>A seat at your own table.</h1>
-                <p>No-limit Hold’em. Your pace.</p>
+                <h1>No table open</h1>
                 <button
                   className="primary"
                   disabled={busy || !!error}
@@ -551,9 +550,6 @@ export default function Game() {
                 >
                   Set up your table <Icon name="arrow" />
                 </button>
-                <span className="welcome-stakes">
-                  2–9 players · Simulated money
-                </span>
               </div>
             </section>
           )}

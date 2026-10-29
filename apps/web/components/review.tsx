@@ -386,9 +386,7 @@ export default function Review({
           {loading && <p className="empty-copy">Loading hands…</p>}
           {!loading && !hands.length && (
             <p className="empty-copy">
-              {saved
-                ? "No saved hands yet. Bookmark a hand to find it here."
-                : "Completed hands will appear here. Play a hand, then come back to review it."}
+              {saved ? "No saved hands." : "No completed hands."}
             </p>
           )}
           {cursor && (
@@ -508,17 +506,13 @@ export default function Review({
           ) : (
             <div className="review-placeholder">
               <Icon name="history" size={36} />
-              <h2>Your next insight starts with a hand.</h2>
-              <p>
-                Select a hand to replay its action and review your decisions.
-              </p>
+              <h2>Select a hand</h2>
             </div>
           )}
         </div>
         <aside className="decision-inspector" aria-label="Decision review">
           <div className="inspector-heading">
             <h2>Decision review</h2>
-            <span>Estimate</span>
           </div>
           {replay && context ? (
             <>
@@ -554,7 +548,7 @@ export default function Review({
               {analysis && (
                 <div className="equity-result">
                   <div>
-                    <span>Estimated equity</span>
+                    <span>Equity</span>
                     <strong>{Math.round(analysis.equity * 100)}%</strong>
                   </div>
                   <div className="equity-bar">
@@ -566,12 +560,12 @@ export default function Review({
                     )}
                   </div>
                   <p className="muted small">
-                    ≈ ±{Math.ceil(analysis.uncertainty * 100)} percentage points
-                    · {analysis.samples} samples
+                    ±{Math.ceil(analysis.uncertainty * 100)} percentage points ·{" "}
+                    {analysis.samples} samples
                   </p>
                   {analysis.call_threshold != null && (
                     <p className="threshold">
-                      Immediate call threshold{" "}
+                      Call price{" "}
                       <strong>
                         {Math.round(analysis.call_threshold * 100)}%
                       </strong>
@@ -584,7 +578,7 @@ export default function Review({
                 <summary>
                   Opponent ranges{" "}
                   <span className="muted small">
-                    {opponents.length} players · edit assumptions
+                    {opponents.length} players
                   </span>
                 </summary>
                 {opponents.map((p) => (
@@ -628,8 +622,7 @@ export default function Review({
                   </div>
                 ))}
                 <p className="muted small">
-                  “random” includes every available hand. Custom ranges use
-                  notation such as 77+, AJs+, KQs.
+                  random = all hands · Examples: 77+, AJs+, KQs
                 </p>
               </details>
               <button
@@ -638,21 +631,17 @@ export default function Review({
                 onClick={() => void calculate()}
               >
                 {analyzing
-                  ? "Estimating…"
+                  ? "Analyzing…"
                   : analysis
                     ? "Recalculate"
                     : "Analyze decision"}
               </button>
-              <p className="estimate-note">
-                Uses information available at this decision. Range-dependent
-                estimates, not solver grades.
-              </p>
             </>
           ) : (
             <p className="empty-copy">
               {replay
-                ? "This older hand has a complete replay but no saved coaching context."
-                : "Your decisions and range assumptions will appear here."}
+                ? "No analysis recorded for this hand."
+                : "No hand selected."}
             </p>
           )}
           {replay && (
@@ -671,7 +660,7 @@ export default function Review({
                 id="study-note"
                 maxLength={2000}
                 value={note}
-                placeholder="What would you consider next time?"
+                placeholder="Add a note"
                 onChange={(e) => {
                   setNote(e.target.value);
                   setNoteSaved(false);

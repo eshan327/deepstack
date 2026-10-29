@@ -285,12 +285,28 @@ export default function PokerTable({
           </div>
           {view.seats.map((p, i) => {
             const angle = Math.PI / 2 + (i / count) * Math.PI * 2;
+            const horizontal = Math.cos(angle);
+            const vertical = Math.sin(angle);
+            const upperSide =
+              vertical < -0.25 && Math.abs(horizontal) > 0.8 && count > 3;
             const style = {
               "--seat-x": `${50 + 40 * Math.cos(angle)}%`,
               "--deal-order": i,
               "--seat-y": `${48 + 40 * Math.sin(angle)}%`,
-              "--wager-x": `${-Math.cos(angle) * 80}px`,
-              "--wager-y": `${-Math.sin(angle) * 75}px`,
+              "--wager-x":
+                Math.abs(horizontal) < 0.2
+                  ? "clamp(130px, 12cqw, 140px)"
+                  : vertical < -0.25 && !upperSide
+                    ? `${Math.sign(horizontal) * 30}px`
+                    : `calc(${-Math.sign(horizontal)} * clamp(115px, 12cqw, 135px))`,
+              "--wager-y":
+                Math.abs(horizontal) < 0.2
+                  ? "35px"
+                  : upperSide
+                    ? "20px"
+                    : vertical < -0.25
+                      ? "55px"
+                      : `${-vertical * (Math.abs(vertical) < 0.25 ? 85 : 45)}px`,
               "--collect-x": `${-Math.cos(angle) * 190}px`,
               "--collect-y": `${-Math.sin(angle) * 150}px`,
             } as CSSProperties;

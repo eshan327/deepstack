@@ -74,31 +74,17 @@ def analyze(context: DecisionContext, request: AnalysisRequest) -> AnalysisResul
     uncertainty = max(1.96 * sqrt(variance / count), 3 / count)
     call = context.legal.call or 0
     threshold = call / (view.pot + call) if call and not context.side_pots else None
-    explanation = (
-        "Side-pot or all-in eligibility changes the price of continuing. "
-        "This is showdown equity against the selected ranges; a simple full-pot call threshold "
-        "does not apply."
-        if context.side_pots
-        else "Compare showdown equity with the immediate call threshold. Future betting, position, "
-        "and equity realization still matter; this comparison does not grade your action."
-        if call
-        else "With no bet to call, consider position, effective stacks, and the value of checking "
-        "versus betting. Showdown equity alone does not choose a bet size."
-    )
     depth = context.effective_stack / context.big_blind
-    details = f"From {hero.position or 'this seat'}, the effective stack was {depth:g} BB. "
+    details = f"{hero.position or 'Hero'} · {depth:g} BB effective."
     if context.action.kind == "raise_to":
         total_wager = context.action.amount
         added = total_wager - hero.bet
-        details += f"Your raise-to total was ${total_wager / 100:g}, adding ${added / 100:g}"
+        details += f" Raised to ${total_wager / 100:g}; ${added / 100:g} added"
         if view.pot:
-            details += f" ({added / view.pot:.0%} of the pot before your action)"
-        details += ". "
-    explanation = (
-        details
-        + explanation
-        + " Range combinations are weighted equally; changing your assumptions can change the estimate."
-    )
+            details += f" ({added / view.pot:.0%} pot)"
+        details += "."
+    if context.side_pots:
+        details += " Side-pot call price unavailable."
     return AnalysisResult(
         equity=equity,
         uncertainty=uncertainty,
@@ -108,5 +94,5 @@ def analyze(context: DecisionContext, request: AnalysisRequest) -> AnalysisResul
         pot=view.pot,
         effective_stack=context.effective_stack,
         ranges=ranges,
-        explanation=explanation,
+        explanation=details,
     )

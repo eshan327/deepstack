@@ -69,7 +69,7 @@ Neon setup changes made for this implementation:
 
 Profile/claim endpoints are `/api/v1/me` and `/me/claim`; review uses `/hands`, `/hands/{id}`, `/annotation`, `/analysis`, and `/export`. `/ranges/expand` derives grid selections with PokerKit. The OpenAPI document and frontend types are checked in; regenerate with `pnpm api:types` after schema changes.
 
-The frontend shares one ordered presentation reducer between live play and replay. Committed snapshots stay separate from presented events. Event IDs deduplicate retries; action labels retain legacy text while new events include seat, street, action, incremental wager, and raise-to total. Native DOM/CSS cards and chips keep symbols crisp, accessible, and responsive.
+The frontend shares one ordered presentation reducer between live play and replay. Committed snapshots stay separate from presented events. Event IDs deduplicate retries; action labels retain legacy text while new events include seat, street, action, incremental wager, and raise-to total. Native SVG cards and CSS chips keep symbols crisp, accessible, and responsive.
 
 ## Verification and CI
 
@@ -98,7 +98,7 @@ pnpm test:e2e
 
 When supplying an alternate ignored environment file, export its variables to child processes (`set -a` before sourcing). API, browser harness, and fixture seeding must target the same isolated database.
 
-Coverage: 42 backend tests, three presentation reducer tests, and 14 browser flows. Browser checks include all eight seat counts at 1600×1000, 1440×900, 1280×720, and 390×844; expanded/collapsed logs; manual/hidden-tab pacing; reduced motion; drafted raise preservation; refresh, notes, bookmarks, replay, analysis/export; real all-in side pots and lost-response retries; and the Neon SDK session-cache/JWT regression. Real managed Auth was also exercised separately with disposable users. The seeded 120-hand simulation asserts chip/card/action integrity.
+Coverage: 42 backend tests, three presentation reducer tests, and 22 browser flows. Browser checks include all eight seat counts at 1600×1000, 1440×900, 1280×720, 1024×768, 768×1024, and 390×844; expanded/collapsed logs and tablet drawers; full-board/large-wager collision checks against cards, pot text, player labels, and avatars; manual/hidden-tab pacing; reduced motion; drafted raise preservation; refresh, notes, bookmarks, replay, analysis/export; real all-in side pots and lost-response retries; and the Neon SDK session-cache/JWT regression. Real managed Auth was also exercised separately with disposable users. The seeded 120-hand simulation asserts chip/card/action integrity.
 
 GitHub Actions use disposable Postgres 17, pinned action commits, locked installs, API contract drift checks, Python lint/format/tests/migrations/simulation, frontend types/lint/unit/build, and Chromium flows. Failure artifacts include traces, screenshots, and server logs. A second workflow audits production dependencies weekly and on dependency changes; Dependabot groups npm, uv, and Actions updates. No auto-merge or deploy credentials are granted to workflows.
 

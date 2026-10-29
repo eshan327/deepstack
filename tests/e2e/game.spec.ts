@@ -252,9 +252,7 @@ test("setup, profile, play, notes, history, coaching and export survive refresh"
   await page
     .getByRole("button", { name: "Analyze decision", exact: true })
     .click();
-  await expect(page.locator(".equity-result")).toContainText(
-    "Estimated equity",
-  );
+  await expect(page.locator(".equity-result")).toContainText("Equity");
   await expect(page.locator(".equity-result")).toContainText("samples");
   await page.locator(".export-menu summary").click();
   const download = page.waitForEvent("download");
@@ -400,6 +398,131 @@ test("manual pacing and hidden tabs wait; player notes preserve a drafted raise"
 });
 
 for (let players = 2; players <= 9; players++) {
+  test(`${players} seats keep wagers clear of cards, labels and pot`, async ({
+    page,
+  }) => {
+    const s = await create(page, { players });
+    const deck = [..."cdhs"].flatMap((suit) =>
+      [..."A23456789TJQK"].map((rank) => rank + suit),
+    );
+    const fixture = {
+      ...s,
+      hand_number: 1,
+      street: "River",
+      complete: false,
+      actor: 0,
+      pot: 12345600,
+      board: deck.slice(18, 23),
+      pots: [],
+      needs_advance: false,
+      seats: s.seats.map((seat: Record<string, unknown>, i: number) => ({
+        ...seat,
+        in_hand: true,
+        folded: false,
+        stack: 9876500,
+        bet: 1234500,
+        cards: deck.slice(i * 2, i * 2 + 2),
+        position: [
+          "BTN",
+          "SB",
+          "BB",
+          "UTG",
+          "UTG+1",
+          "UTG+2",
+          "LJ",
+          "HJ",
+          "CO",
+        ][i],
+        last_action: "Call $12,345",
+        winnings: 0,
+      })),
+    };
+    await page.route(`**/api/v1/sessions/${s.id}`, (route) =>
+      route.fulfill({ json: { snapshot: fixture, events: [] } }),
+    );
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/");
+    await expect(page.locator(".play-workspace .wager")).toHaveCount(players);
+    for (const viewport of [
+      { width: 1600, height: 1000 },
+      { width: 1280, height: 720 },
+      { width: 1024, height: 768 },
+      { width: 768, height: 1024 },
+      { width: 390, height: 844 },
+    ]) {
+      await page.setViewportSize(viewport);
+      for (let log = 0; log < (viewport.width > 1200 ? 2 : 1); log++) {
+        await page.clock.runFor(50);
+        await page.waitForTimeout(50);
+        const collisions = await page
+          .locator(".play-workspace .table-stage")
+          .evaluate((root) => {
+            const intersects = (a: DOMRect, b: DOMRect) =>
+              a.left < b.right - 1 &&
+              a.right > b.left + 1 &&
+              a.top < b.bottom - 1 &&
+              a.bottom > b.top + 1;
+            const visible = (selector: string) =>
+              [...root.querySelectorAll(selector)].filter((n) => {
+                const style = getComputedStyle(n);
+                return style.visibility !== "hidden" && style.opacity !== "0";
+              });
+            const protectedNodes = visible(
+              ".pot > span, .pot strong, .board, .seat-details, .hole-cards .playing-card, .monogram",
+            );
+            const result: string[] = [];
+            for (const wager of visible(".wager:not(.awarded)"))
+              for (const node of protectedNodes) {
+                if (
+                  intersects(
+                    wager.getBoundingClientRect(),
+                    node.getBoundingClientRect(),
+                  )
+                )
+                  result.push(
+                    `seat ${wager.closest("[data-seat]")?.getAttribute("data-seat")} wager / ${node.className}`,
+                  );
+              }
+            for (const center of visible(".board, .pot > span, .pot strong"))
+              for (const node of visible(
+                ".seat-details, .hole-cards .playing-card",
+              )) {
+                if (
+                  intersects(
+                    center.getBoundingClientRect(),
+                    node.getBoundingClientRect(),
+                  )
+                )
+                  result.push(
+                    `${center.className} / seat ${node.closest("[data-seat]")?.getAttribute("data-seat")} ${node.className}: ${JSON.stringify(center.getBoundingClientRect().toJSON())} / ${JSON.stringify(node.getBoundingClientRect().toJSON())}`,
+                  );
+              }
+            return result;
+          });
+        expect(
+          collisions,
+          `${players} players, ${viewport.width}×${viewport.height}, log ${log}`,
+        ).toEqual([]);
+        if (viewport.width > 1200)
+          await page
+            .getByRole("button", { name: "Action log", exact: true })
+            .click();
+      }
+      if (players === 6)
+        await page.screenshot({
+          path: `${qa}/wagers-${viewport.width}.png`,
+          animations: "disabled",
+          fullPage: true,
+        });
+      if (players === 9 && viewport.width === 1024) {
+        await page
+          .getByRole("button", { name: "Action log", exact: true })
+          .click();
+        await expect(page.getByRole("dialog")).toBeVisible();
+        await page.getByRole("button", { name: "Close panel" }).click();
+      }
+    }
+  });
   test(`${players} seats fit desktop, small laptop and portrait phone`, async ({
     page,
   }) => {

@@ -368,6 +368,7 @@ h2 {
   background: transparent;
 }
 .table-stage {
+  container-type: inline-size;
   position: relative;
   width: 100%;
   height: clamp(330px, calc(100svh - 410px), 780px);
@@ -434,10 +435,15 @@ h2 {
   display: flex;
   gap: 8px;
 }
+.table-stage:not(.replay-table) .board > .playing-card,
+.table-stage:not(.replay-table) .card-slot {
+  width: clamp(32px, 4.8cqw, 65px);
+  height: clamp(46px, 6.8cqw, 92px);
+}
 .playing-card,
 .card-slot {
-  width: 65px;
-  height: 92px;
+  width: clamp(42px, 5cqw, 65px);
+  height: clamp(60px, 7.1cqw, 92px);
   border-radius: 5px;
   flex-shrink: 0;
 }
@@ -507,7 +513,7 @@ h2 {
   left: var(--seat-x);
   top: var(--seat-y);
   transform: translate(-50%, -50%);
-  width: 158px;
+  width: clamp(120px, 14cqw, 158px);
   z-index: 2;
 }
 .nameplate {
@@ -1596,12 +1602,6 @@ details > summary {
   min-height: 30px;
   color: var(--sage);
 }
-.estimate-note {
-  font-size: 10px;
-  color: var(--muted);
-  line-height: 1.7;
-  margin-top: 14px;
-}
 .study-note {
   border-top: 1px solid var(--line);
   margin-top: 24px;
@@ -1875,7 +1875,7 @@ details > summary {
     font-size: 7px;
   }
 }
-@media (max-width: 900px) {
+@media (max-width: 1200px) {
   .play-workspace.with-log {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1981,7 +1981,7 @@ details > summary {
     max-width: 100%;
   }
 }
-@media (max-width: 600px) {
+@media (max-width: 900px) {
   .app-header {
     padding: 0 15px;
     height: 62px;
@@ -2153,8 +2153,14 @@ details > summary {
   .wager {
     font-size: 9px;
     gap: 3px;
-    left: calc(50% + var(--wager-x) * 0.55);
-    top: calc(50% + var(--wager-y) * 0.6);
+    left: 50%;
+    top: calc(100% + 5px);
+    transform: translate(-50%, 0);
+  }
+  .hero-seat .wager {
+    left: calc(100% + 36px);
+    top: 50%;
+    transform: translate(-50%, -50%);
   }
   .chip-stack {
     width: 18px;
@@ -2171,7 +2177,7 @@ details > summary {
   }
   .players-2 .seat-1 {
     --seat-x: 50% !important;
-    --seat-y: 10% !important;
+    --seat-y: 15% !important;
   }
   .players-3 .seat-1 {
     --seat-x: 22% !important;
@@ -2182,15 +2188,31 @@ details > summary {
     --seat-y: 18% !important;
   }
   .players-4 .seat-1 {
-    --seat-x: 17% !important;
+    --seat-x: 13% !important;
     --seat-y: 49% !important;
+  }
+  .players-4 .seat {
+    width: 96px;
+  }
+  .players-4 .nameplate {
+    padding: 4px;
+    gap: 4px;
+  }
+  .players-4 .monogram {
+    width: 22px;
+    height: 22px;
+  }
+  .players-4 .seat-1 .seat-markers {
+    right: auto;
+    left: 0;
+    top: -20px;
   }
   .players-4 .seat-2 {
     --seat-x: 50% !important;
-    --seat-y: 9% !important;
+    --seat-y: 15% !important;
   }
   .players-4 .seat-3 {
-    --seat-x: 83% !important;
+    --seat-x: 87% !important;
     --seat-y: 49% !important;
   }
   .players-5 .seat-1 {
@@ -2219,7 +2241,7 @@ details > summary {
   }
   .players-6 .seat-3 {
     --seat-x: 50% !important;
-    --seat-y: 8% !important;
+    --seat-y: 15% !important;
   }
   .players-6 .seat-4 {
     --seat-x: 80% !important;
@@ -2230,8 +2252,8 @@ details > summary {
     --seat-y: 68% !important;
   }
   :is(.players-7, .players-8, .players-9).table-stage {
-    height: max(455px, calc(100svh - 385px));
-    min-height: 455px;
+    height: max(540px, calc(100svh - 385px));
+    min-height: 540px;
   }
   :is(.players-7, .players-8, .players-9) .seat {
     width: 105px;
@@ -2294,7 +2316,7 @@ details > summary {
     --seat-y: 77% !important;
   }
   .players-8 .seat-6 {
-    --seat-y: 48% !important;
+    --seat-y: 59% !important;
   }
   .players-8 .seat-5 {
     --seat-y: 19% !important;
@@ -2314,20 +2336,11 @@ details > summary {
   :is(.players-7, .players-8, .players-9) .seat:not(.hero-seat) .seat-name {
     max-width: 40px;
   }
-  :is(.players-7, .players-8, .players-9) .seat:not(.hero-seat) .wager {
-    left: auto;
-    right: 3px;
-    top: 25px;
-    transform: none;
-  }
-  :is(.players-7, .players-8, .players-9) .seat:has(.wager) .nameplate {
-    padding-right: 40px;
-  }
   :is(.players-7, .players-8, .players-9) .hero-seat .playing-card {
     width: 38px;
     height: 55px;
   }
-  .players-9 .community {
+  :is(.players-7, .players-8, .players-9) .community {
     top: 37%;
   }
   .players-9 :is(.seat-3, .seat-6) {
@@ -2335,9 +2348,6 @@ details > summary {
   }
   .players-9 :is(.seat-2, .seat-7) {
     --seat-y: 60% !important;
-  }
-  :is(.players-7, .players-8, .players-9) .seat:has(.wager) .seat-identity {
-    width: calc(100% + 34px);
   }
   :is(.players-7, .players-8, .players-9) .seat:not(.hero-seat) .seat-name {
     max-width: 65px;
@@ -2586,7 +2596,7 @@ details > summary {
     scroll-behavior: auto !important;
   }
 }
-@media (max-height: 800px) and (min-width: 601px) {
+@media (max-height: 800px) and (min-width: 901px) {
   .table-stage {
     height: calc(100svh - 365px);
     min-height: 325px;
@@ -2606,8 +2616,8 @@ details > summary {
   }
   .table-stage:not(.replay-table) .board > .playing-card,
   .table-stage:not(.replay-table) .card-slot {
-    width: 53px;
-    height: 75px;
+    width: clamp(32px, 4.8cqw, 53px);
+    height: clamp(46px, 6.8cqw, 75px);
   }
   .table-stage:not(.replay-table) .pot strong {
     font-size: 25px;

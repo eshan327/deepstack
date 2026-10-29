@@ -28,9 +28,7 @@ export default function ActionLog({
       aria-label="Hand action log"
       aria-live="off"
     >
-      {!events.length && (
-        <p className="empty-copy">Actions appear here as the hand unfolds.</p>
-      )}
+      {!events.length && <p className="empty-copy">No actions yet.</p>}
       {visible.map(({ event, index: i }, n) => {
         const group =
           event.kind === "board"
