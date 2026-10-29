@@ -85,7 +85,10 @@ class Hand(Base):
     bookmarked: Mapped[bool] = mapped_column(Boolean, default=False)
     note: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
-    __table_args__ = (Index("session_hand_number", "session_id", "number", unique=True),)
+    __table_args__ = (
+        Index("session_hand_number", "session_id", "number", unique=True),
+        Index("ix_hands_created_id", "created_at", "id"),
+    )
 
 
 class Receipt(Base):

@@ -45,6 +45,7 @@ jobs:
         working-directory: apps/api
         run: |
           uv run alembic upgrade head
+          uv run alembic check
           uv run ruff check .
           uv run ruff format --check .
           uv run pytest -q --junitxml=/tmp/backend-tests.xml
