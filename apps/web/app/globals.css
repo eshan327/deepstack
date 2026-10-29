@@ -443,50 +443,22 @@ h2 {
 }
 .playing-card {
   position: relative;
-  background: #f0f0e9;
+  background: #faf9f4;
   color: #112025;
   box-shadow: 0 3px 5px #0004;
   animation: card-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
   overflow: hidden;
 }
-.card-corner {
-  position: absolute;
-  top: 6px;
-  left: 7px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  line-height: 0.95;
-  font-size: 23px;
-  font-weight: 650;
-  letter-spacing: -0.06em;
-}
-.card-corner i {
-  font-size: 19px;
-  font-style: normal;
-  margin-top: 3px;
-}
-.card-pip {
-  position: absolute;
-  top: 57%;
-  left: 57%;
-  transform: translate(-50%, -50%);
-  font-size: 39px;
-  line-height: 1;
-}
-.card-bottom {
-  position: absolute;
-  bottom: 5px;
-  right: 5px;
-  transform: rotate(180deg);
-  font-size: 11px;
-  font-weight: 650;
-}
-.card-bottom i {
+.playing-card > .card-face {
   display: block;
-  font-style: normal;
-  font-size: 10px;
-  line-height: 1;
+  width: 100%;
+  height: 100%;
+}
+.card-face text {
+  fill: currentColor;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.8px;
 }
 .suit-h,
 .suit-d {
@@ -503,43 +475,26 @@ h2 {
   border: 1px solid #b4ccbf13;
 }
 .card-back {
-  background: #2b424d;
-  border: 3px solid #c2cece;
+  background-color: #203640;
+  background-image:
+    repeating-linear-gradient(45deg, transparent 0 4px, #91aaa81c 4px 5px),
+    repeating-linear-gradient(-45deg, transparent 0 4px, #91aaa81c 4px 5px);
+  border: 2px solid #e6e9e1;
   box-shadow:
-    inset 0 0 0 1px #101c28,
-    0 2px 3px #0004;
+    inset 0 0 0 2px #203640,
+    0 2px 4px #0004;
 }
 .card-back:after {
   content: "";
   position: absolute;
   inset: 3px;
-  border: 1px solid #a6c0c04d;
-  background-image: repeating-linear-gradient(
-    45deg,
-    transparent 0 3px,
-    #c0cecd20 3px 4px
-  );
+  border: 1px solid #b3c6c360;
+  border-radius: 1px;
 }
 .card-small {
   width: 31px;
   height: 43px;
   border-radius: 3px;
-}
-.card-small .card-corner {
-  font-size: 13px;
-  top: 3px;
-  left: 3px;
-}
-.card-small .card-corner i {
-  font-size: 10px;
-  margin-top: 1px;
-}
-.card-small .card-pip {
-  font-size: 22px;
-  top: 65%;
-}
-.card-small .card-bottom {
-  display: none;
 }
 .side-pots {
   display: flex;
@@ -1003,17 +958,6 @@ h2 {
   width: 20px;
   height: 28px;
 }
-.mini-board .card-corner {
-  font-size: 10px;
-  top: 2px;
-  left: 2px;
-}
-.mini-board .card-corner i {
-  font-size: 9px;
-}
-.mini-board .card-pip {
-  display: none;
-}
 .welcome-table {
   position: relative;
   min-height: calc(100svh - 170px);
@@ -1402,18 +1346,6 @@ details > summary {
   width: 25px;
   height: 36px;
 }
-.mini-hand .card-corner {
-  top: 2px;
-  left: 3px;
-  font-size: 12px;
-}
-.mini-hand .card-corner i {
-  font-size: 10px;
-}
-.mini-hand .card-pip {
-  font-size: 18px;
-  top: 67%;
-}
 .bookmarked {
   color: var(--amber);
 }
@@ -1473,29 +1405,9 @@ details > summary {
   width: 32px;
   height: 46px;
 }
-.replay-table .card-corner {
-  font-size: 14px;
-  top: 3px;
-  left: 3px;
-}
-.replay-table .card-corner i {
-  font-size: 11px;
-}
-.replay-table .card-pip {
-  font-size: 20px;
-}
-.replay-table .card-bottom {
-  display: none;
-}
 .replay-table .card-small {
   width: 20px;
   height: 28px;
-}
-.replay-table .card-small .card-corner {
-  font-size: 10px;
-}
-.replay-table .card-small .card-pip {
-  display: none;
 }
 .replay-table .community {
   gap: 10px;
@@ -2162,25 +2074,6 @@ details > summary {
   .board {
     gap: 4px;
   }
-  .card-corner {
-    font-size: 17px;
-    left: 4px;
-    top: 4px;
-  }
-  .card-corner i {
-    font-size: 13px;
-  }
-  .card-pip {
-    font-size: 28px;
-  }
-  .card-bottom {
-    font-size: 8px;
-    bottom: 3px;
-    right: 3px;
-  }
-  .card-bottom i {
-    font-size: 8px;
-  }
   .pot strong {
     font-size: 25px;
   }
@@ -2237,27 +2130,10 @@ details > summary {
     height: 31px;
     border-width: 2px;
   }
-  .card-small .card-corner {
-    font-size: 10px;
-    left: 2px;
-    top: 2px;
-  }
-  .card-small .card-corner i {
-    font-size: 8px;
-  }
-  .card-small .card-pip {
-    font-size: 15px;
-  }
   .hero-seat .playing-card,
   .with-log .hero-seat .playing-card {
     width: 45px;
     height: 65px;
-  }
-  .hero-seat .card-corner {
-    font-size: 17px;
-  }
-  .hero-seat .card-pip {
-    font-size: 28px;
   }
   .seat-markers {
     top: 11px;
@@ -2660,21 +2536,9 @@ details > summary {
     width: 32px;
     height: 46px;
   }
-  .replay-table .card-corner {
-    font-size: 14px;
-  }
-  .replay-table .card-pip {
-    font-size: 21px;
-  }
   .replay-table .card-small {
     width: 20px;
     height: 28px;
-  }
-  .replay-table .card-small .card-corner {
-    font-size: 9px;
-  }
-  .replay-table .card-small .card-pip {
-    display: none;
   }
   .replay-table:is(.players-7, .players-8, .players-9) {
     min-height: 480px;

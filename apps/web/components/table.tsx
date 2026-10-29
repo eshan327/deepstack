@@ -1,13 +1,54 @@
 import type { CSSProperties } from "react";
 import { money, type SeatView, type TableView } from "@/lib/api";
 
-const suits: Record<string, string> = { c: "♣", d: "♦", h: "♥", s: "♠" };
 const names: Record<string, string> = {
   c: "clubs",
   d: "diamonds",
   h: "hearts",
   s: "spades",
 };
+
+function Suit({
+  suit,
+  x,
+  y,
+  size,
+}: {
+  suit: string;
+  x: number;
+  y: number;
+  size: number;
+}) {
+  return (
+    <svg
+      x={x}
+      y={y}
+      width={size}
+      height={size}
+      viewBox="0 0 100 100"
+      fill="currentColor"
+    >
+      {suit === "c" ? (
+        <>
+          <circle cx="50" cy="25" r="21" />
+          <circle cx="27" cy="55" r="21" />
+          <circle cx="73" cy="55" r="21" />
+          <path d="M43 49h14c-1 20 1 31 9 43H34c8-12 10-23 9-43Z" />
+        </>
+      ) : (
+        <path
+          d={
+            suit === "h"
+              ? "M50 91C39 78 6 57 6 31 6 7 34 0 50 23 66 0 94 7 94 31 94 57 61 78 50 91Z"
+              : suit === "d"
+                ? "M50 3 83 50 50 97 17 50Z"
+                : "M50 3C39 20 6 43 6 63c0 23 28 30 39 9-1 9-4 15-11 21h32c-7-6-10-12-11-21 11 21 39 14 39-9C94 43 61 20 50 3Z"
+          }
+        />
+      )}
+    </svg>
+  );
+}
 
 export function Card({
   card,
@@ -28,17 +69,32 @@ export function Card({
       aria-label={back ? "Face-down card" : `${rank} of ${names[suit]}`}
     >
       {!back && (
-        <>
-          <span className="card-corner">
-            {rank}
-            <i>{suits[suit]}</i>
-          </span>
-          <span className="card-pip">{suits[suit]}</span>
-          <span className="card-bottom">
-            {rank}
-            <i>{suits[suit]}</i>
-          </span>
-        </>
+        <svg className="card-face" viewBox="0 0 70 100" aria-hidden="true">
+          {small ? (
+            <>
+              <text x="8" y="37" fontSize={rank === "10" ? 29 : 33}>
+                {rank}
+              </text>
+              <Suit suit={suit} x={32} y={57} size={30} />
+            </>
+          ) : (
+            <>
+              <g>
+                <text x="8" y="25" fontSize={rank === "10" ? 20 : 23}>
+                  {rank}
+                </text>
+                <Suit suit={suit} x={9} y={29} size={12} />
+              </g>
+              <Suit suit={suit} x={23} y={38} size={24} />
+              <g transform="rotate(180 35 50)">
+                <text x="8" y="25" fontSize={rank === "10" ? 20 : 23}>
+                  {rank}
+                </text>
+                <Suit suit={suit} x={9} y={29} size={12} />
+              </g>
+            </>
+          )}
+        </svg>
       )}
     </div>
   );
