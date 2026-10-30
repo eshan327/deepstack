@@ -3,6 +3,7 @@
 import argparse
 import json
 from collections import defaultdict
+from random import Random
 from time import perf_counter
 
 from deepstack import session
@@ -11,7 +12,9 @@ from deepstack.schemas import Observations, TableConfig
 
 def run(hands: int, seed: int, samples: int, trace: bool = False):
     totals = defaultdict(lambda: Observations().model_dump())
+    names = {}
     started = perf_counter()
+    rng = Random(seed)
     t = None
     last_players = None
     for number in range(hands):
@@ -19,9 +22,10 @@ def run(hands: int, seed: int, samples: int, trace: bool = False):
         if players != last_players:
             if t:
                 for seat in t["seats"]:
+                    names[seat["opponent_id"]] = seat["name"]
                     for key, value in seat["observed"].items():
-                        totals[seat["name"]][key] += value
-            t = session.new_table("simulation", TableConfig(players=players))
+                        totals[seat["opponent_id"]][key] += value
+            t = session.new_table("simulation", TableConfig(players=players), rng=rng)
             last_players = players
         if not t["seats"][0]["stack"]:
             t["seats"][0]["stack"] = t["seats"][0]["starting_stack"]
@@ -48,12 +52,14 @@ def run(hands: int, seed: int, samples: int, trace: bool = False):
             print(f"{number + 1}/{hands} hands; {perf_counter() - started:.1f}s", flush=True)
     report = {}
     for seat in t["seats"]:
+        names[seat["opponent_id"]] = seat["name"]
         for key, value in seat["observed"].items():
-            totals[seat["name"]][key] += value
-    for name, stats in totals.items():
+            totals[seat["opponent_id"]][key] += value
+    for identity, stats in totals.items():
         assert stats["pfr"] <= stats["vpip"] <= stats["hands"]
         assert stats["three_bet"] <= stats["three_bet_opportunities"]
-        report[name] = {
+        report[identity] = {
+            "name": names[identity],
             **stats,
             "VPIP%": round(100 * stats["vpip"] / stats["hands"], 1),
             "PFR%": round(100 * stats["pfr"] / stats["hands"], 1),

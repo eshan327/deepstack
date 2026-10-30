@@ -1515,6 +1515,11 @@
             "title": "Reducedmotion",
             "default": false
           },
+          "sounds": {
+            "type": "boolean",
+            "title": "Sounds",
+            "default": false
+          },
           "actionLog": {
             "type": "boolean",
             "title": "Actionlog",
@@ -1552,6 +1557,11 @@
             "title": "Reducedmotion",
             "default": false
           },
+          "sounds": {
+            "type": "boolean",
+            "title": "Sounds",
+            "default": false
+          },
           "actionLog": {
             "type": "boolean",
             "title": "Actionlog",
@@ -1565,6 +1575,7 @@
           "pace",
           "fourColor",
           "reducedMotion",
+          "sounds",
           "actionLog"
         ],
         "title": "Preferences"

@@ -54,20 +54,28 @@ export function Card({
   card,
   back = false,
   small = false,
+  order = 0,
 }: {
   card?: string;
   back?: boolean;
   small?: boolean;
+  order?: number;
 }) {
   const suit = card?.[1] || "s";
   const rank = card?.[0] === "T" ? "10" : card?.[0];
   return (
     <div
       className={`playing-card ${back ? "card-back" : ""} ${small ? "card-small" : ""} suit-${suit}`}
+      style={{ "--card-order": order } as CSSProperties}
       role="img"
       data-card={back ? "back" : card}
       aria-label={back ? "Face-down card" : `${rank} of ${names[suit]}`}
     >
+      {back && (
+        <svg className="card-back-emblem" viewBox="0 0 100 100" aria-hidden="true">
+          <Suit suit="s" x={0} y={0} size={100} />
+        </svg>
+      )}
       {!back && (
         <svg className="card-face" viewBox="0 0 70 100" aria-hidden="true">
           {small ? (
@@ -133,6 +141,7 @@ function Seat({
   onSelect,
   bb,
   complete,
+  dealt,
 }: {
   player: SeatView;
   actor: boolean;
@@ -142,6 +151,7 @@ function Seat({
   onSelect: (n: number) => void;
   bb?: number;
   complete: boolean;
+  dealt: boolean;
 }) {
   const status = p.sitting_out
     ? "Sitting out"
@@ -167,7 +177,7 @@ function Seat({
           p.cards.map((card, i) => (
             <Card key={`${card}-${i}`} card={card} small={!hero} />
           ))
-        ) : p.in_hand && !complete ? (
+        ) : p.in_hand && !complete && dealt ? (
           <>
             <Card back small />
             <Card back small />
@@ -224,6 +234,7 @@ export default function PokerTable({
   replay = false,
   latestSeat,
   eventKind,
+  dealtSeats,
 }: {
   view: TableView | null;
   bb?: number;
@@ -232,6 +243,7 @@ export default function PokerTable({
   replay?: boolean;
   latestSeat?: number | null;
   eventKind?: string;
+  dealtSeats?: number[];
 }) {
   const count = view?.seats.length || 6;
   return (
@@ -267,7 +279,11 @@ export default function PokerTable({
             <div className="board" aria-label="Board">
               {Array.from({ length: 5 }, (_, i) =>
                 view.board[i] ? (
-                  <Card key={view.board[i]} card={view.board[i]} />
+                  <Card
+                    key={view.board[i]}
+                    card={view.board[i]}
+                    order={i < 3 ? i : 0}
+                  />
                 ) : (
                   <div key={`slot-${i}`} className="card-slot" />
                 ),
@@ -291,7 +307,6 @@ export default function PokerTable({
               vertical < -0.25 && Math.abs(horizontal) > 0.8 && count > 3;
             const style = {
               "--seat-x": `${50 + 40 * Math.cos(angle)}%`,
-              "--deal-order": i,
               "--seat-y": `${48 + 40 * Math.sin(angle)}%`,
               "--wager-x":
                 Math.abs(horizontal) < 0.2
@@ -321,6 +336,7 @@ export default function PokerTable({
                 onSelect={onSelect}
                 bb={bb}
                 complete={view.complete}
+                dealt={!dealtSeats || dealtSeats.includes(p.seat)}
               />
             );
           })}

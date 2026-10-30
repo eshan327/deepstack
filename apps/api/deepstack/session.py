@@ -4,7 +4,7 @@ from random import Random, SystemRandom
 from time import monotonic
 from uuid import uuid4
 
-from . import bots, engine
+from . import bots, engine, opponents
 from .schemas import DecisionContext, Observations, Snapshot, TableConfig
 
 NAMES = [
@@ -52,29 +52,29 @@ NAMES = [
 
 
 def new_table(
-    session_id: str, config: TableConfig, memories: dict | None = None, hero_name: str = "You"
+    session_id: str,
+    config: TableConfig,
+    memories: dict | None = None,
+    hero_name: str = "You",
+    *,
+    rng: Random | None = None,
 ) -> dict:
     memories = memories or {}
-    order = (
-        bots.FIELD_ORDER[config.field]
-        if config.players >= 6 or config.field != "balanced"
-        else [0, 3, 1, 4, 2, 5, 6, 7]
-    )
+    rng = rng if rng is not None else SystemRandom()
     stacks = config.seat_stacks or [config.starting_stack] * config.players
     seats = []
-    names = SystemRandom().sample(
+    names = rng.sample(
         [n for n in NAMES if n.casefold() != hero_name.casefold()], config.players - 1
     )
     for i in range(config.players):
-        profile = bots.PROFILES[order[i - 1]] if i else None
-        identity = uuid4().hex if profile else "hero"
+        identity = uuid4().hex if i else "hero"
         memory = memories.get(identity, {})
         seats.append(
             {
                 "seat": i,
-                "name": names[i - 1] if profile else hero_name,
+                "name": names[i - 1] if i else hero_name,
                 "opponent_id": identity,
-                "profile": profile.key if profile else "hero",
+                **({"bot": opponents.sample(config.field, rng)} if i else {}),
                 "stack": stacks[i],
                 "starting_stack": stacks[i],
                 "sitting_out": False,
@@ -105,8 +105,19 @@ def bot_view(table: dict, state) -> bots.BotView:
     i = state.actor_index
     seat = hand["mapping"][i]
     public = engine.view(table, state)
-    opponents = tuple(
-        (s.seat, s.observed.hands, s.observed.vpip)
+    model = table["seats"][seat].get("bot", {"reads": {}})
+    rivals = tuple(
+        bots.Opponent(
+            seat=s.seat,
+            **{
+                key: opponents.read(
+                    model, table["seats"][s.seat].get("opponent_id", str(s.seat)), key
+                )
+                for key in opponents.PRIORS
+            },
+            cards=tuple(hand["shown"].get(str(s.seat), [])),
+            stack=s.stack,
+        )
         for s in public.seats
         if s.in_hand and not s.folded and s.seat != seat
     )
@@ -122,18 +133,66 @@ def bot_view(table: dict, state) -> bots.BotView:
         pot=state.total_pot_amount,
         big_blind=table["config"]["big_blind"],
         legal=engine.legal_actions(state, table["config"]["big_blind"]),
-        opponents=opponents,
+        opponents=rivals,
         actions=tuple(tuple(a) for a in hand["public_actions"]),
-        in_position=i == max(j for j in state.player_indices if state.statuses[j]),
-        fold_estimate=sum(
-            (10 + s.observed.folds_to_bet) / (20 + s.observed.faced_bet)
-            if s.observed.hands >= 50
-            else 0.5
-            for s in public.seats
-            if s.in_hand and not s.folded and s.seat != seat
-        )
-        / max(1, len(opponents)),
+        in_position=i
+        == max(
+            j for j in state.player_indices if state.statuses[j] and (state.stacks[j] > 0 or j == i)
+        ),
+        fold_estimate=sum(o.fold_cbet for o in rivals if o.stack != 0) / max(1, len(rivals)),
+        starting_stack=hand["stacks"][i],
+        committed=max(0, hand["stacks"][i] - state.stacks[i]),
+        players_behind=max(0, len(state.actor_indices) - 1),
+        side_pot=sum(public.pots[1:]),
     )
+
+
+def model_for(table: dict, seat: dict) -> dict:
+    if "bot" not in seat:
+        # Upgrade legacy private sessions only on a write; names and old profile keys play no role.
+        seed = f"opponent:{table['id']}:{seat['seat']}:{seat.get('opponent_id', '')}"
+        rng = Random(int.from_bytes(blake2b(seed.encode(), digest_size=16).digest()))
+        seat["bot"] = opponents.sample(table["config"]["field"], rng)
+    return seat["bot"]
+
+
+def update_opponents(table: dict, state):
+    hand = table["hand"]
+    public = engine.view(table, state)
+    observations = opponents.evidence(
+        hand["public_actions"], hand["mapping"], hand["shown"], public.board
+    )
+    for seat in table["seats"]:
+        if seat["seat"] == 0 and "bot" not in seat:
+            continue
+        model = model_for(table, seat)
+        seed = f"memory:{hand['decision_seed']}:{seat['seat']}"
+        rng = Random(int.from_bytes(blake2b(seed.encode(), digest_size=16).digest()))
+        if seat["seat"] in hand["mapping"]:
+            # A sitting-out opponent cannot watch from outside the table.
+            opponents.observe(
+                model,
+                {
+                    table["seats"][s].get("opponent_id", str(s)): obs
+                    for s, obs in observations.items()
+                    if s != seat["seat"]
+                },
+                rng,
+            )
+            i = hand["mapping"].index(seat["seat"])
+            opponents.finish(
+                model,
+                state.stacks[i] - hand["stacks"][i],
+                hand["stacks"][i],
+                table["config"]["big_blind"],
+                True,
+                seat["seat"] in hand["seen_vpip"],
+                rng,
+            )
+        else:
+            opponents.finish(
+                model, 0, seat["stack"], table["config"]["big_blind"], False, False, rng
+            )
 
 
 def settle(table: dict, state):
@@ -152,6 +211,7 @@ def settle(table: dict, state):
             ("three_bet_opportunities", "three_opps"),
         ):
             obs[field] += seat_number in hand[key]
+    update_opponents(table, state)
     hero_index = hand["mapping"].index(0)
     table["profit"] += state.stacks[hero_index] - hand["stacks"][hero_index]
     table["hands_played"] += 1
@@ -180,13 +240,12 @@ def advance(table: dict, *, stop_at_hero: bool = True, samples: int = 64):
             seat = table["hand"]["mapping"][state.actor_index]
             if stop_at_hero and seat == 0:
                 break
+            model = model_for(table, table["seats"][seat])
             v = bot_view(table, state)
-            key = table["seats"][seat]["profile"]
-            profile = bots.PROFILE_BY_KEY.get(key, bots.PROFILES[0])
             seed = f"{table['hand']['decision_seed']}:{seat}:{len(table['hand']['commands'])}"
             rng = Random(int.from_bytes(blake2b(seed.encode(), digest_size=16).digest()))
             # shortcut: small sampling after 12 decisions; increase only if profiling leaves headroom.
-            action = bots.choose(v, profile, rng, samples if decisions < 12 else 12)
+            action = bots.choose(v, model, rng, samples if decisions < 12 else min(samples, 12))
             engine.act(table, state, action)
             decisions += 1
             steps += 1

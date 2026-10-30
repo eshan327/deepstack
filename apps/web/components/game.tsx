@@ -16,6 +16,7 @@ import {
 import { authClient } from "@/lib/auth-client";
 import { defaultPreferences, restorePreferences } from "@/lib/presentation";
 import usePresentation from "@/lib/use-presentation";
+import { unlockTableAudio } from "@/lib/table-sounds";
 import ActionDock from "./action-dock";
 import ActionLog from "./action-log";
 import Drawers, { type Panel } from "./drawers";
@@ -258,6 +259,7 @@ export default function Game() {
   }
 
   function updatePreferences(next: Preferences) {
+    if (next.sounds) unlockTableAudio();
     setPreferences(next);
     try {
       localStorage.setItem("deepstack.preferences.v2", JSON.stringify(next));
@@ -509,6 +511,7 @@ export default function Game() {
                 fourColor={preferences.fourColor}
                 latestSeat={presentation.current?.seat}
                 eventKind={presentation.current?.kind}
+                dealtSeats={presentation.dealtSeats}
                 onSelect={(seat) => {
                   setSelectedSeat(seat);
                   setPanel("player");

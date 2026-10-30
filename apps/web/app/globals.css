@@ -381,8 +381,8 @@ h2 {
   position: absolute;
   inset: 10% 8% 13%;
   border-radius: 50%;
-  background: #283b36;
-  padding: 6px;
+  background: linear-gradient(155deg, #44534a, #253730 38%, #182a26 75%, #37483e);
+  padding: 7px;
   box-shadow:
     0 5px 0 #0a1314,
     0 12px 25px #0005,
@@ -392,10 +392,18 @@ h2 {
 .table-felt {
   height: 100%;
   border-radius: inherit;
-  background: var(--felt);
-  box-shadow: inset 0 0 50px #071d1740;
+  background: radial-gradient(ellipse at 50% 35%, #275142, var(--felt) 65%, #153328);
+  box-shadow: inset 0 1px 5px #081b15aa, inset 0 0 70px #071d1755;
   position: relative;
   overflow: hidden;
+}
+.table-felt:before {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border: 1px solid #b8d1b11c;
+  border-radius: inherit;
+  pointer-events: none;
 }
 .table-felt:after {
   content: "";
@@ -449,10 +457,11 @@ h2 {
 }
 .playing-card {
   position: relative;
-  background: #faf9f4;
+  background: linear-gradient(145deg, #fffef9, #eeede5);
   color: #112025;
-  box-shadow: 0 3px 5px #0004;
-  animation: card-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+  box-shadow: inset 0 0 0 1px #fff9, 0 2px 2px #09181266, 0 5px 9px #0003;
+  animation: card-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--card-order, 0) * 45ms);
   overflow: hidden;
 }
 .playing-card > .card-face {
@@ -483,12 +492,20 @@ h2 {
 .card-back {
   background-color: #203640;
   background-image:
-    repeating-linear-gradient(45deg, transparent 0 4px, #91aaa81c 4px 5px),
-    repeating-linear-gradient(-45deg, transparent 0 4px, #91aaa81c 4px 5px);
+    repeating-linear-gradient(45deg, transparent 0 5px, #91aaa814 5px 6px),
+    repeating-linear-gradient(-45deg, transparent 0 5px, #91aaa814 5px 6px);
   border: 2px solid #e6e9e1;
   box-shadow:
     inset 0 0 0 2px #203640,
     0 2px 4px #0004;
+}
+.card-back-emblem {
+  position: absolute;
+  width: 36%;
+  height: 36%;
+  left: 32%;
+  top: 32%;
+  color: #c6cbb47a;
 }
 .card-back:after {
   content: "";
@@ -524,7 +541,9 @@ h2 {
   width: 100%;
   border-radius: 8px;
   text-align: left;
-  background: #101b1d25;
+  background: linear-gradient(145deg, #172723b8, #101b1d66);
+  box-shadow: inset 0 1px 0 #c6d4c70a;
+  transition: background 180ms, box-shadow 240ms;
 }
 .nameplate:hover {
   background: #1b2b2edb;
@@ -578,6 +597,10 @@ h2 {
   min-height: 17px;
   white-space: nowrap;
 }
+.acting .nameplate {
+  background: linear-gradient(135deg, #2b4135db, #182c26c9);
+  box-shadow: inset 2px 0 0 #b8d1b1bb, 0 3px 12px #0002;
+}
 .acting .monogram {
   border-color: var(--sage);
   color: var(--sage);
@@ -602,7 +625,7 @@ h2 {
   font-weight: 600;
 }
 .winner .monogram {
-  animation: winner-pulse 0.6s ease-out 2;
+  animation: winner-pulse 0.8s ease-out;
   border-color: var(--sage);
 }
 .hole-cards {
@@ -618,10 +641,10 @@ h2 {
     translate 0.3s;
 }
 .hole-cards .playing-card {
-  animation-delay: calc(var(--deal-order, 0) * 65ms);
+  animation-delay: 0ms;
 }
 .hole-cards .playing-card:last-child {
-  animation-delay: calc(var(--deal-order, 0) * 65ms + 75ms);
+  animation-delay: 55ms;
 }
 .hole-cards .playing-card:first-child {
   rotate: -6deg;
@@ -1637,8 +1660,8 @@ details > summary {
 @keyframes card-in {
   from {
     opacity: 0;
-    translate: 0 -16px;
-    rotate: -5deg;
+    translate: 0 -10px;
+    scale: 0.97;
   }
   to {
     opacity: 1;
@@ -1648,8 +1671,8 @@ details > summary {
 @keyframes chips-in {
   from {
     opacity: 0;
-    scale: 0.7;
-    translate: 0 8px;
+    scale: 0.92;
+    translate: 0 5px;
   }
   to {
     opacity: 1;
@@ -1658,7 +1681,16 @@ details > summary {
   }
 }
 .table-stage[data-event="collect"] .wager {
-  animation: collect-chips 0.4s ease-in both;
+  animation: none;
+}
+.table-stage[data-event="collect"] .chip-stack {
+  animation: collect-chips 0.4s cubic-bezier(0.4, 0, 0.7, 1) both;
+}
+.table-stage[data-event="collect"] .wager > span:last-child {
+  animation: fade-out 0.2s ease-out both;
+}
+@keyframes fade-out {
+  to { opacity: 0; }
 }
 .table-stage[data-event="show"] .latest-action:not(.hero-seat) .playing-card {
   animation: card-reveal 0.45s ease-out both;
@@ -1666,7 +1698,7 @@ details > summary {
 .wager.awarded {
   left: 50%;
   top: 50%;
-  animation: award-chips 1s ease-out both;
+  animation: award-chips 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
   pointer-events: none;
 }
 @keyframes card-reveal {

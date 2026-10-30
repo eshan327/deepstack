@@ -162,14 +162,25 @@ def test_no_private_cards_or_strategy_in_snapshots_and_events():
             for card in s.hole_cards[i]:
                 assert repr(card) not in public
                 assert repr(card) not in events
-    assert not any(k in public for k in ("decision_seed", '"deck"', '"profile"'))
+    assert not any(
+        k in public
+        for k in (
+            "decision_seed",
+            '"deck"',
+            '"profile"',
+            '"bot"',
+            '"traits"',
+            '"reads"',
+            '"own_equity"',
+        )
+    )
 
 
 def test_seeded_bot_ignores_unseen_human_cards_and_deck():
     t, s = table(6)
     act(t, s, "call")
     v = session.bot_view(t, s)
-    p = bots.PROFILES[0]
+    p = t["seats"][t["hand"]["mapping"][s.actor_index]]["bot"]
     decision = bots.choose(v, p, Random(8))
     hero = t["hand"]["mapping"].index(0)
     s.hole_cards[hero].reverse()
@@ -233,10 +244,12 @@ def test_equity_sampling_honors_weights_and_ties(monkeypatch):
         session.bot_view(t, s),
         cards=("Ac", "Ad"),
         board=("2c", "3d", "7h", "9s", "Jc"),
-        opponents=((1, 0, 0),),
+        opponents=(bots.Opponent(1),),
     )
     monkeypatch.setattr(
-        bots, "opponent_combos", lambda *args: ([("Kc", "Kd"), ("Jd", "Jh")], [99, 1])
+        bots,
+        "opponent_combos",
+        lambda *args: ([("Kc", "Kd"), ("Jd", "Jh")], [99, 1], [False, False]),
     )
     assert 0.96 < bots.equity(v, Random(8), 500) <= 1.0
     monkeypatch.undo()
@@ -247,16 +260,18 @@ def test_equity_sampling_honors_weights_and_ties(monkeypatch):
 def test_seeded_simulation_decisions_repeat():
     logs = []
     for _ in range(2):
-        t = session.new_table("test", TableConfig(players=6))
+        t = session.new_table("test", TableConfig(players=6), rng=Random(73))
         session.start_hand(t, 73103)
         session.advance(t, stop_at_hero=False, samples=12)
         logs.append(t["hand"]["public_actions"])
     assert logs[0] == logs[1]
 
 
-def test_opponent_field_presets_apply_at_every_table_size():
+def test_opponent_fields_shift_populations_at_every_table_size():
     for count in range(2, 10):
-        soft = session.new_table("soft", TableConfig(players=count, field="soft"))
-        tough = session.new_table("tough", TableConfig(players=count, field="tough"))
-        assert soft["seats"][1]["profile"] == "eli"
-        assert tough["seats"][1]["profile"] == "theo"
+        soft = session.new_table("soft", TableConfig(players=count, field="soft"), rng=Random(1))
+        tough = session.new_table("tough", TableConfig(players=count, field="tough"), rng=Random(1))
+        for a, b in zip(soft["seats"][1:], tough["seats"][1:]):
+            assert a["name"] == b["name"]
+            assert a["bot"]["traits"]["looseness"] > b["bot"]["traits"]["looseness"]
+            assert a["bot"]["traits"]["aggression"] < b["bot"]["traits"]["aggression"]

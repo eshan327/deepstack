@@ -219,8 +219,24 @@ def test_review_annotations_exports_and_decisions_are_owned(client, identities):
     assert not {"deck", "decision_seed", "profile", "commands"}.intersection(
         json.loads(exported.text)
     )
+    with db.factory()() as conn:
+        stored = conn.get(db.Hand, hand["id"])
+        public_record = json.dumps([stored.summary, stored.events, stored.decisions])
+    for data in (
+        json.dumps(replay),
+        exported.text,
+        client.get(path + "/export").text,
+        public_record,
+    ):
+        assert not any(
+            f'"{key}"' in data for key in ("bot", "traits", "reads", "own_equity", "attentiveness")
+        )
     analysis = client.post(path + "/analysis", json={"decision": 0, "ranges": {}})
     assert analysis.status_code == 200 and analysis.json()["samples"] >= 32
+    assert not any(
+        f'"{key}"' in analysis.text
+        for key in ("bot", "traits", "reads", "own_equity", "attentiveness")
+    )
     client.headers["Authorization"] = f"Bearer {bob}"
     for suffix in ("", "/export", "/export?format=json"):
         assert client.get(path + suffix).status_code == 404
@@ -245,8 +261,11 @@ def test_review_annotations_exports_and_decisions_are_owned(client, identities):
 def test_profile_validation_and_next_hand_name(client):
     assert client.post("/api/v1/me", json={"name": "   "}).status_code == 422
     assert client.post("/api/v1/me", json={"name": "bad\nname"}).status_code == 422
-    response = client.post("/api/v1/me", json={"name": "Eshan", "preferences": {"pace": "manual"}})
+    response = client.post(
+        "/api/v1/me", json={"name": "Eshan", "preferences": {"pace": "manual", "sounds": True}}
+    )
     assert response.status_code == 200 and response.json()["preferences"]["pace"] == "manual"
+    assert client.get("/api/v1/me").json()["preferences"]["sounds"] is True
     s = create(client)
     assert s["seats"][0]["name"] == "Eshan"
 

@@ -598,3 +598,61 @@ test("nine-seat revealed cards and full board remain readable", async ({
     });
   }
 });
+
+test("table sounds opt in, persist, and do not replay on reload; cards deal seat by seat", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+  await page.addInitScript(() => {
+    const observed = window as typeof window & { soundStarts: number };
+    observed.soundStarts = 0;
+    const oscillatorStart = OscillatorNode.prototype.start;
+    OscillatorNode.prototype.start = function (when?: number) {
+      observed.soundStarts++;
+      oscillatorStart.call(this, when);
+    };
+    const bufferStart = AudioBufferSourceNode.prototype.start;
+    AudioBufferSourceNode.prototype.start = function (when?: number, offset?: number, duration?: number) {
+      observed.soundStarts++;
+      bufferStart.call(this, when, offset, duration);
+    };
+  });
+  await create(page, { players: 6 });
+  await page.goto("/");
+  await expect(page).toHaveTitle("Deepstack");
+  await expect(page.getByRole("button", { name: "Deal first hand" })).toBeVisible();
+  await page.getByLabel("Presentation speed").selectOption("manual");
+  await page.getByRole("button", { name: "Your account" }).click();
+  const sounds = page.getByRole("switch", { name: "Table sounds" });
+  await expect(sounds).not.toBeChecked();
+  const saved = page.waitForResponse((r) => r.url().endsWith("/me") && r.request().method() === "POST" && r.request().postDataJSON().preferences.sounds);
+  await sounds.check();
+  expect((await saved).ok()).toBeTruthy();
+  await page.getByRole("button", { name: "Close panel" }).click();
+  const dealt = page.waitForResponse((r) => r.url().endsWith("/commands"));
+  await page.getByRole("button", { name: "Deal first hand" }).click();
+  expect((await dealt).ok()).toBeTruthy();
+  await expect(page.locator(".play-workspace .hole-cards .playing-card")).toHaveCount(0);
+  for (let i = 0; i < 6; i++) {
+    await page.getByRole("button", { name: "Next action", exact: true }).click();
+    if (await page.locator(".play-workspace .hole-cards .playing-card").count()) break;
+  }
+  await expect(page.locator(".play-workspace .hole-cards:has(.playing-card)")).toHaveCount(1);
+  await expect.poll(() => page.evaluate(() => (window as typeof window & { soundStarts: number }).soundStarts)).toBeGreaterThan(0);
+  await page.getByLabel("Presentation speed").selectOption("brisk");
+  await drain(page);
+  await page.screenshot({ path: `${qa}/polished-table-desktop.png`, animations: "disabled", fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await noOverlap(page);
+  await page.screenshot({ path: `${qa}/polished-table-phone.png`, animations: "disabled", fullPage: true });
+  await page.reload();
+  await expect(page.locator(".play-workspace .nameplate")).toHaveCount(6);
+  expect(await page.evaluate(() => (window as typeof window & { soundStarts: number }).soundStarts)).toBe(0);
+  await page.getByRole("button", { name: "Your account" }).click();
+  await expect(page.getByRole("switch", { name: "Table sounds" })).toBeChecked();
+  expect(await page.evaluate(() => (window as typeof window & { soundStarts: number }).soundStarts)).toBe(0);
+  await page.getByRole("switch", { name: "Table sounds" }).uncheck();
+  expect(errors).toEqual([]);
+});

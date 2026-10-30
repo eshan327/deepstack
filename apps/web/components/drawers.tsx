@@ -400,6 +400,7 @@ function Account({
           ["bb", "Show stacks in big blinds"],
           ["fourColor", "Four-color deck"],
           ["reducedMotion", "Reduce motion"],
+          ["sounds", "Table sounds"],
         ] as const
       ).map(([key, label]) => (
         <label className="switch-row" key={key}>

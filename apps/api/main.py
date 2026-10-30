@@ -173,7 +173,7 @@ def save_result(conn, guest, row, cmd, after=0):
             )
         )
     for seat in table["seats"]:
-        identity = seat.get("opponent_id", seat["profile"])
+        identity = seat.get("opponent_id") or seat["profile"]
         memory = conn.get(db.Memory, (guest, identity))
         if not memory:
             memory = db.Memory(guest_id=guest, profile=identity)

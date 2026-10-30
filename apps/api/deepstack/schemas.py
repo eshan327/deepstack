@@ -219,6 +219,7 @@ class Preferences(Model):
     pace: Literal["deliberate", "brisk", "manual"] = "deliberate"
     fourColor: bool = False
     reducedMotion: bool = False
+    sounds: bool = False
     actionLog: bool = False
 
 

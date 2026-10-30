@@ -599,6 +599,11 @@ export interface components {
              */
             reducedMotion: boolean;
             /**
+             * Sounds
+             * @default false
+             */
+            sounds: boolean;
+            /**
              * Actionlog
              * @default false
              */
@@ -627,6 +632,11 @@ export interface components {
              * @default false
              */
             reducedMotion: boolean;
+            /**
+             * Sounds
+             * @default false
+             */
+            sounds: boolean;
             /**
              * Actionlog
              * @default false

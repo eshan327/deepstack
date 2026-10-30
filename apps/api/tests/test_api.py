@@ -49,6 +49,9 @@ def test_create_resume_idempotency_and_stale_versions(client):
     body = {"command_id": str(uuid4()), "expected_version": s["version"], "kind": "next_hand"}
     path = f"/api/v1/sessions/{s['id']}/commands"
     first = client.post(path, json=body)
+    with db.factory()() as conn:
+        private_before = conn.get(db.GameSession, s["id"]).state
+        assert all("traits" in seat["bot"] for seat in private_before["seats"][1:])
     assert first.status_code == 200, first.text
     assert client.post(path, json=body).json() == first.json()
     conflicting = {**body, "kind": "advance"}
@@ -58,6 +61,8 @@ def test_create_resume_idempotency_and_stale_versions(client):
     db.factory.cache_clear()
     resumed = client.get(f"/api/v1/sessions/{s['id']}").json()
     assert resumed["snapshot"] == first.json()["snapshot"]
+    with db.factory()() as conn:
+        assert conn.get(db.GameSession, s["id"]).state == private_before
 
 
 def test_concurrent_duplicate_taps_start_one_hand(client):
@@ -147,7 +152,17 @@ def test_private_cards_and_deck_never_escape(client):
     assert strings <= allowed
     assert not any(
         key in json.dumps(result)
-        for key in ('"deck"', '"decision_seed"', '"profile"', '"commands"')
+        for key in (
+            '"deck"',
+            '"decision_seed"',
+            '"profile"',
+            '"commands"',
+            '"bot"',
+            '"traits"',
+            '"reads"',
+            '"own_equity"',
+            '"attentiveness"',
+        )
     )
 
 

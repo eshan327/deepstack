@@ -8,6 +8,7 @@ import {
   eventDuration,
   restorePreferences,
 } from "../apps/web/lib/presentation.ts";
+import { tableCue, playTableSound, unlockTableAudio } from "../apps/web/lib/table-sounds.ts";
 import type { CommandResult, PublicEvent } from "../apps/web/lib/api.ts";
 
 const event = (id: number, kind = "action", action = "fold") =>
@@ -104,4 +105,23 @@ test("legacy preferences migrate without conflating reduced motion and speed", (
     eventDuration(event(3, "award"), "brisk") <
       eventDuration(event(3, "award"), "deliberate"),
   );
+});
+
+
+test("table audio chooses quiet event cues and defaults to off for legacy preferences", () => {
+  assert.equal(restorePreferences({}).sounds, false);
+  assert.equal(restorePreferences({ sounds: true }).sounds, true);
+  assert.equal(restorePreferences({ sounds: "true" }).sounds, false);
+  const turn = { ...event(1, "board"), view: { actor: 0, complete: false } } as PublicEvent;
+  assert.equal(tableCue(turn, false), "card");
+  assert.equal(tableCue(turn, true), "turn");
+  assert.equal(tableCue(event(2, "action", "call"), false), "chips");
+  assert.equal(tableCue(event(3, "action", "check"), false), "check");
+  assert.equal(tableCue(event(4), false), null);
+  const award = { ...event(5, "award"), view: { seats: [{ winnings: 200 }] } } as PublicEvent;
+  assert.equal(tableCue(award, false), "win");
+  assert.equal(tableCue({ ...award, view: { seats: [{ winnings: 0 }] } } as PublicEvent, false), null);
+  // Unsupported audio and cues before a user gesture must be harmless.
+  assert.doesNotThrow(() => unlockTableAudio());
+  assert.doesNotThrow(() => playTableSound("card"));
 });
