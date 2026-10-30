@@ -151,7 +151,7 @@ function Seat({
   onSelect: (n: number) => void;
   bb?: number;
   complete: boolean;
-  dealt: boolean;
+  dealt: number;
 }) {
   const status = p.sitting_out
     ? "Sitting out"
@@ -177,11 +177,10 @@ function Seat({
           p.cards.map((card, i) => (
             <Card key={`${card}-${i}`} card={card} small={!hero} />
           ))
-        ) : p.in_hand && !complete && dealt ? (
-          <>
-            <Card back small />
-            <Card back small />
-          </>
+        ) : p.in_hand && !complete && dealt > 0 ? (
+          Array.from({ length: Math.min(2, dealt) }, (_, i) => (
+            <Card key={i} back small />
+          ))
         ) : null}
       </div>
       <button
@@ -336,7 +335,7 @@ export default function PokerTable({
                 onSelect={onSelect}
                 bb={bb}
                 complete={view.complete}
-                dealt={!dealtSeats || dealtSeats.includes(p.seat)}
+                dealt={dealtSeats ? dealtSeats.filter((seat) => seat === p.seat).length : 2}
               />
             );
           })}

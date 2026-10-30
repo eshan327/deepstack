@@ -75,10 +75,12 @@ export function playTableSound(cue: TableCue) {
     const filter = audio.createBiquadFilter();
     const envelope = audio.createGain();
     source.buffer = buffer;
-    filter.type = "bandpass";
-    filter.frequency.value = 2200;
-    filter.Q.value = 0.7;
-    envelope.gain.value = 0.045;
+    filter.type = "lowpass";
+    filter.frequency.value = 1100;
+    filter.Q.value = 0.5;
+    envelope.gain.setValueAtTime(0, now);
+    envelope.gain.linearRampToValueAtTime(0.03, now + 0.008);
+    envelope.gain.exponentialRampToValueAtTime(0.0001, now + buffer.duration);
     source.connect(filter).connect(envelope).connect(audio.destination);
     source.start(now);
     source.onended = () => {

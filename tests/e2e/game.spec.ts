@@ -640,6 +640,12 @@ test("table sounds opt in, persist, and do not replay on reload; cards deal seat
     if (await page.locator(".play-workspace .hole-cards .playing-card").count()) break;
   }
   await expect(page.locator(".play-workspace .hole-cards:has(.playing-card)")).toHaveCount(1);
+  await expect(page.locator(".play-workspace .hole-cards .playing-card")).toHaveCount(1);
+  for (let cards = 2; cards <= 12; cards++) {
+    await page.getByRole("button", { name: "Next action", exact: true }).click();
+    await expect(page.locator(".play-workspace .hole-cards .playing-card")).toHaveCount(cards);
+    await expect(page.locator(".play-workspace .hole-cards:has(.playing-card)")).toHaveCount(Math.min(cards, 6));
+  }
   await expect.poll(() => page.evaluate(() => (window as typeof window & { soundStarts: number }).soundStarts)).toBeGreaterThan(0);
   await page.getByLabel("Presentation speed").selectOption("brisk");
   await drain(page);

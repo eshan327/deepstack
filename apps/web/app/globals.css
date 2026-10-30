@@ -643,9 +643,6 @@ h2 {
 .hole-cards .playing-card {
   animation-delay: 0ms;
 }
-.hole-cards .playing-card:last-child {
-  animation-delay: 55ms;
-}
 .hole-cards .playing-card:first-child {
   rotate: -6deg;
 }
