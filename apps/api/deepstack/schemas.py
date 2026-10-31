@@ -4,7 +4,8 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 Chips = Annotated[int, Field(strict=True, ge=0, le=9_000_000_000_000_000)]
-PositiveChips = Annotated[int, Field(strict=True, gt=0, le=1_000_000_000_000)]
+PositiveChips = Annotated[int, Field(strict=True, gt=0, le=9_000_000_000_000_000)]
+BuyInChips = Annotated[int, Field(strict=True, gt=0, le=1_000_000_000_000)]
 
 
 class Model(BaseModel):
@@ -13,10 +14,10 @@ class Model(BaseModel):
 
 class TableConfig(Model):
     players: int = Field(default=6, ge=2, le=9, strict=True)
-    small_blind: PositiveChips = 100
-    big_blind: PositiveChips = 200
-    starting_stack: PositiveChips = 60000
-    seat_stacks: list[PositiveChips] | None = None
+    small_blind: BuyInChips = 100
+    big_blind: BuyInChips = 200
+    starting_stack: BuyInChips = 60000
+    seat_stacks: list[BuyInChips] | None = None
     field: Literal["balanced", "soft", "tough"] = "balanced"
 
     @model_validator(mode="after")
@@ -51,7 +52,7 @@ class Command(Model):
     kind: Literal["act", "next_hand", "advance", "top_up", "set_seat", "note", "end"]
     action: Action | None = None
     seat: int | None = Field(default=None, ge=0, le=8, strict=True)
-    amount: PositiveChips | None = None
+    amount: BuyInChips | None = None
     sitting_out: bool | None = None
     note: str | None = Field(default=None, max_length=2000)
 
@@ -86,7 +87,7 @@ class SeatView(Model):
     seat: int
     name: str
     stack: Chips
-    starting_stack: PositiveChips
+    starting_stack: BuyInChips
     bet: Chips = 0
     cards: list[str] = Field(default_factory=list)
     in_hand: bool = False
@@ -189,7 +190,7 @@ class DecisionContext(Model):
     view: TableView
     legal: LegalActions
     effective_stack: Chips
-    big_blind: PositiveChips = 200
+    big_blind: BuyInChips = 200
     action: Action
     side_pots: bool = False
 
@@ -202,6 +203,7 @@ class Replay(Model):
 
 class SessionList(Model):
     sessions: list[SessionSummary]
+    next_cursor: str | None = None
 
 
 class HandList(Model):

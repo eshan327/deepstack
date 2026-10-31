@@ -173,3 +173,63 @@ def test_invalid_money_and_midhand_cashout_cannot_mutate(client):
     assert command(client, s, "top_up", seat=0, amount=1.5).status_code == 422
     assert command(client, s, "end").status_code == 422
     assert client.get(f"/api/v1/sessions/{s['id']}").json()["snapshot"] == s
+
+
+def test_session_pagination_and_old_active_table(client):
+    from datetime import timedelta
+
+    s = create(client, 2)
+    guest = hashlib.sha256(client.cookies[COOKIE].encode()).hexdigest()
+    stamp = db.now()
+    with db.factory()() as conn, conn.begin():
+        conn.get(db.GameSession, s["id"]).created_at = stamp - timedelta(days=1)
+        for _ in range(104):
+            sid = str(uuid4())
+            conn.add(
+                db.GameSession(
+                    id=sid,
+                    guest_id=guest,
+                    status="ended",
+                    state={**s, "hands_played": 0, "profit": 0},
+                    created_at=stamp,
+                )
+            )
+    first = client.get("/api/v1/sessions").json()
+    assert len(first["sessions"]) == 100 and first["next_cursor"]
+    assert s["id"] not in {row["id"] for row in first["sessions"]}
+    second = client.get("/api/v1/sessions", params={"before": first["next_cursor"]}).json()
+    assert len(second["sessions"]) == 5 and second["next_cursor"] is None
+    ids = [row["id"] for row in first["sessions"] + second["sessions"]]
+    assert len(set(ids)) == 105 and s["id"] == ids[-1]
+    active = client.get("/api/v1/sessions?active=true").json()
+    assert [row["id"] for row in active["sessions"]] == [s["id"]]
+    for cursor in ("broken", f"2026-01-01|{s['id']}", "2026-01-01T00:00:00+00:00|bad"):
+        assert client.get("/api/v1/sessions", params={"before": cursor}).status_code == 422
+
+
+def test_opponent_notes_persist_without_extra_memory_rows(client):
+    s = create(client, 2)
+    guest = hashlib.sha256(client.cookies[COOKIE].encode()).hexdigest()
+    s = command(client, s, "note", seat=1, note="Keep this table note.").json()["snapshot"]
+    s = finish(client, command(client, s, "next_hand").json()["snapshot"])
+    ended = command(client, s, "end").json()["snapshot"]
+    with db.factory()() as conn, conn.begin():
+        assert list(conn.scalars(select(db.Memory.profile).where(db.Memory.guest_id == guest))) == [
+            "hero"
+        ]
+        conn.add(
+            db.Memory(
+                guest_id=guest, profile="retired-opponent", observed={"hands": 999}, note="Old"
+            )
+        )
+    newer = create(client, 2)
+    assert newer["seats"][0]["observed"]["hands"] == ended["seats"][0]["observed"]["hands"]
+    assert newer["seats"][1]["note"] == ""
+    original = client.get(f"/api/v1/sessions/{s['id']}").json()["snapshot"]
+    assert original["seats"][1]["note"] == "Keep this table note."
+    assert original["seats"][1]["observed"] == ended["seats"][1]["observed"]
+    with db.factory()() as conn:
+        assert set(conn.scalars(select(db.Memory.profile).where(db.Memory.guest_id == guest))) == {
+            "hero",
+            "retired-opponent",
+        }

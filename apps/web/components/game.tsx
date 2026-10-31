@@ -98,7 +98,7 @@ export default function Game() {
       }
       const [me, sessions] = await Promise.all([
         api<Profile>("/me"),
-        api<SessionList>("/sessions"),
+        api<SessionList>("/sessions?active=true"),
       ]);
       setProfile(me);
       let prefs = me.preferences;
@@ -140,6 +140,20 @@ export default function Game() {
     void initialize();
   }, [initialize]);
 
+  const commandError = useCallback(
+    async (failure: ApiError) => {
+      if (failure.status && failure.status < 500) pending.current = null;
+      if (failure.status === 409 && snapshotRef.current) {
+        const latest = await api<CommandResult>(
+          `/sessions/${snapshotRef.current.id}`,
+        ).catch(() => null);
+        if (latest) apply(latest);
+      }
+      setError(failure.message);
+    },
+    [apply],
+  );
+
   const command = useCallback(
     async (fields: Omit<Command, "command_id" | "expected_version">) => {
       const current = snapshotRef.current;
@@ -164,22 +178,14 @@ export default function Game() {
         apply(result, request.animate);
         return true;
       } catch (e) {
-        const failure = e as ApiError;
-        if (failure.status && failure.status < 500) pending.current = null;
-        if (failure.status === 409) {
-          const latest = await api<CommandResult>(
-            `/sessions/${current.id}`,
-          ).catch(() => null);
-          if (latest) apply(latest);
-        }
-        setError(failure.message);
+        await commandError(e as ApiError);
         return false;
       } finally {
         locked.current = false;
         setBusy(false);
       }
     },
-    [apply, presentation.pending],
+    [apply, commandError, presentation.pending],
   );
 
   useEffect(() => {
@@ -225,7 +231,7 @@ export default function Game() {
       pending.current = null;
       apply(result, animate);
     } catch (e) {
-      setError((e as Error).message);
+      await commandError(e as ApiError);
     } finally {
       locked.current = false;
       setBusy(false);

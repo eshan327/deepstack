@@ -90,9 +90,9 @@ function Settings({ snapshot: s, profile, onCreate, onCommand, busy }: Props) {
   const [config, setConfig] = useState<TableConfig>(
     s?.config || profile?.table_defaults || defaults,
   );
-  const [individual, setIndividual] = useState(!!s?.config.seat_stacks);
+  const [individual, setIndividual] = useState(!!config.seat_stacks);
   const [stacks, setStacks] = useState(
-    s?.config.seat_stacks ||
+    config.seat_stacks ||
       Array.from({ length: 9 }, () => config.starting_stack),
   );
   const [error, setError] = useState("");

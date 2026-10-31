@@ -43,6 +43,34 @@
       "get": {
         "summary": "Sessions",
         "operationId": "sessions_api_v1_sessions_get",
+        "parameters": [
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Active"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -53,6 +81,16 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
           }
         }
       },
@@ -60,14 +98,14 @@
         "summary": "Create",
         "operationId": "create_api_v1_sessions_post",
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CreateSession"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -791,7 +829,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 1000000000000.0,
+                "maximum": 9000000000000000.0,
                 "exclusiveMinimum": 0.0
               },
               {
@@ -824,7 +862,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 1000000000000.0,
+                "maximum": 9000000000000000.0,
                 "exclusiveMinimum": 0.0
               },
               {
@@ -1383,7 +1421,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 1000000000000.0,
+                "maximum": 9000000000000000.0,
                 "exclusiveMinimum": 0.0
               },
               {
@@ -1396,7 +1434,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 1000000000000.0,
+                "maximum": 9000000000000000.0,
                 "exclusiveMinimum": 0.0
               },
               {
@@ -1588,7 +1626,7 @@
           },
           "amount": {
             "type": "integer",
-            "maximum": 1000000000000.0,
+            "maximum": 9000000000000000.0,
             "exclusiveMinimum": 0.0,
             "title": "Amount"
           }
@@ -1969,12 +2007,24 @@
             },
             "type": "array",
             "title": "Sessions"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "sessions"
+          "sessions",
+          "next_cursor"
         ],
         "title": "SessionList"
       },

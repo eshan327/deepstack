@@ -153,8 +153,8 @@ test("account bootstrap fetches a JWT despite the SDK session cache", async ({
       },
     });
   });
-  await page.route("**/api/v1/sessions", (route) =>
-    route.fulfill({ json: { sessions: [] } }),
+  await page.route(/\/api\/v1\/sessions(?:\?.*)?$/, (route) =>
+    route.fulfill({ json: { sessions: [], next_cursor: null } }),
   );
   await page.goto("/");
   await page.getByRole("button", { name: "Your account" }).click();
@@ -189,7 +189,7 @@ test("setup, profile, play, notes, history, coaching and export survive refresh"
   await page.getByRole("button", { name: "Set up your table" }).click();
   await page.getByLabel("Small blind ($)", { exact: true }).fill("5");
   await page.getByRole("button", { name: "Start table", exact: true }).click();
-  await expect(page.getByRole("alert")).toContainText(
+  await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
     "small blind cannot exceed",
   );
   await page.getByLabel("Small blind ($)", { exact: true }).fill("1");

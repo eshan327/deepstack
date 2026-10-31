@@ -275,3 +275,35 @@ def test_opponent_fields_shift_populations_at_every_table_size():
             assert a["name"] == b["name"]
             assert a["bot"]["traits"]["looseness"] > b["bot"]["traits"]["looseness"]
             assert a["bot"]["traits"]["aggression"] < b["bot"]["traits"]["aggression"]
+
+
+def test_winnings_above_buy_in_limit_remain_playable():
+    cap = 1_000_000_000_000
+    t, state = table(3, stacks=[cap, cap, cap])
+    act(t, state, "raise_to", 60)
+    act(t, state, "fold")
+    act(t, state, "fold")
+    session.settle(t, state)
+    assert t["seats"][0]["stack"] == cap + 30
+
+    session.start_hand(t, 43)
+    state = engine.restore(t)
+    forced(t, state)
+    act(t, state, "raise_to", 60)
+    act(t, state, "fold")
+    public = session.snapshot(t, state)
+    legal = public.legal
+    assert public.actor == 0 and legal.max_raise_to > cap
+    assert any(p.amount > cap for p in legal.presets)
+    type(public).model_validate(public.model_dump())
+    action = Action(kind="raise_to", amount=legal.max_raise_to)
+    engine.act(t, state, action.model_dump())
+    finish(t, state)
+    assert sum(state.stacks) == 3 * cap
+
+    with pytest.raises(ValueError):
+        TableConfig(starting_stack=cap + 1)
+    with pytest.raises(ValueError):
+        Command(command_id=uuid4(), expected_version=0, kind="top_up", seat=0, amount=cap + 1)
+    with pytest.raises(ValueError):
+        Action(kind="raise_to", amount=9_000_000_000_000_001)

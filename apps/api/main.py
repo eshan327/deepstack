@@ -172,14 +172,13 @@ def save_result(conn, guest, row, cmd, after=0):
                 decisions=hand.get("decisions", []),
             )
         )
-    for seat in table["seats"]:
-        identity = seat.get("opponent_id") or seat["profile"]
-        memory = conn.get(db.Memory, (guest, identity))
-        if not memory:
-            memory = db.Memory(guest_id=guest, profile=identity)
-            conn.add(memory)
-        memory.observed = copy.deepcopy(seat["observed"])
-        memory.note = seat["note"]
+    hero = table["seats"][0]
+    memory = conn.get(db.Memory, (guest, "hero"))
+    if not memory:
+        memory = db.Memory(guest_id=guest, profile="hero")
+        conn.add(memory)
+    memory.observed = copy.deepcopy(hero["observed"])
+    memory.note = hero["note"]
     result = CommandResult(
         snapshot=session.snapshot(table),
         events=[e for e in hand["events"] if e["id"] > after] if hand else [],
@@ -232,12 +231,31 @@ def guest(
 
 
 @app.get("/api/v1/sessions", response_model=SessionList)
-def sessions(guest: str = Depends(owner), conn: Session = Depends(connection, scope="function")):
+def sessions(
+    before: str | None = None,
+    active: bool = False,
+    guest: str = Depends(owner),
+    conn: Session = Depends(connection, scope="function"),
+):
+    query = select(db.GameSession).where(db.GameSession.guest_id.in_(owner_ids(conn, guest)))
+    if active:
+        query = query.where(db.GameSession.status == "active")
+    if before:
+        try:
+            stamp, sid = before.split("|", 1)
+            when = datetime.fromisoformat(stamp)
+            if when.tzinfo is None:
+                raise ValueError()
+            query = query.where(
+                or_(
+                    db.GameSession.created_at < when,
+                    and_(db.GameSession.created_at == when, db.GameSession.id < str(UUID(sid))),
+                )
+            )
+        except (ValueError, TypeError):
+            raise HTTPException(422, "Invalid session cursor.") from None
     rows = conn.scalars(
-        select(db.GameSession)
-        .where(db.GameSession.guest_id.in_(owner_ids(conn, guest)))
-        .order_by(db.GameSession.created_at.desc())
-        .limit(100)
+        query.order_by(db.GameSession.created_at.desc(), db.GameSession.id.desc()).limit(101)
     ).all()
     return SessionList(
         sessions=[
@@ -249,8 +267,9 @@ def sessions(guest: str = Depends(owner), conn: Session = Depends(connection, sc
                 created_at=r.created_at.isoformat(),
                 config=r.state["config"],
             )
-            for r in rows
-        ]
+            for r in rows[:100]
+        ],
+        next_cursor=f"{rows[99].created_at.isoformat()}|{rows[99].id}" if len(rows) > 100 else None,
     )
 
 
@@ -278,10 +297,8 @@ def create(
         )
     ):
         raise HTTPException(409, "Resume or end your current table before starting another.")
-    memories = {
-        m.profile: {"observed": m.observed, "note": m.note}
-        for m in conn.scalars(select(db.Memory).where(db.Memory.guest_id == guest))
-    }
+    memory = conn.get(db.Memory, (guest, "hero"))
+    memories = {"hero": {"observed": memory.observed, "note": memory.note}} if memory else {}
     sid = str(uuid4())
     table = session.new_table(sid, cmd.config, memories, hero_name=profile_row(conn, guest).name)
     row = db.GameSession(id=sid, guest_id=guest, state=table)

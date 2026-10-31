@@ -28,6 +28,8 @@ export default function Review({
   onLoadSession: (id: string) => Promise<void>;
 }) {
   const [sessions, setSessions] = useState<SessionList["sessions"]>([]);
+  const [sessionCursor, setSessionCursor] = useState<string | null>(null);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
   const [session, setSession] = useState("");
   const [days, setDays] = useState("");
   const [stakes, setStakes] = useState("");
@@ -42,7 +44,6 @@ export default function Review({
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [note, setNote] = useState("");
-  const [noteSaved, setNoteSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [gridSeat, setGridSeat] = useState<number | null>(null);
   const selection = useRef(0);
@@ -59,8 +60,12 @@ export default function Review({
 
   useEffect(() => {
     void api<SessionList>("/sessions")
-      .then((data) => setSessions(data.sessions))
-      .catch((e) => setError(e.message));
+      .then((data) => {
+        setSessions(data.sessions);
+        setSessionCursor(data.next_cursor);
+      })
+      .catch((e) => setError(e.message))
+      .finally(() => setSessionsLoading(false));
   }, []);
 
   const openHand = useCallback(
@@ -79,7 +84,6 @@ export default function Review({
         setReplay(data);
         loadReplay(data);
         setNote(data.hand.note);
-        setNoteSaved(false);
       } catch (e) {
         if (selection.current === run) setError((e as Error).message);
       }
@@ -122,6 +126,22 @@ export default function Review({
     };
   }, [session, days, stakes, saved, openHand]);
 
+  async function moreSessions() {
+    if (!sessionCursor || sessionsLoading) return;
+    setSessionsLoading(true);
+    try {
+      const data = await api<SessionList>(
+        `/sessions?before=${encodeURIComponent(sessionCursor)}`,
+      );
+      setSessions((old) => [...old, ...data.sessions]);
+      setSessionCursor(data.next_cursor);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setSessionsLoading(false);
+    }
+  }
+
   async function more() {
     if (!cursor || loading) return;
     const run = queryRun.current;
@@ -145,7 +165,6 @@ export default function Review({
 
   async function annotation(bookmarked: boolean, text: string) {
     if (!replay || saving) return;
-    const run = selection.current;
     setSaving(true);
     setError("");
     try {
@@ -157,7 +176,6 @@ export default function Review({
       setReplay((old) =>
         old && old.hand.id === hand.id ? { ...old, hand } : old,
       );
-      if (run === selection.current) setNoteSaved(true);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -177,6 +195,7 @@ export default function Review({
       setAnalysis(null);
       setRanges({});
       analysisRun.current++;
+      setAnalyzing(false);
     }
   }
 
@@ -185,6 +204,7 @@ export default function Review({
     setRanges({});
     setAnalysis(null);
     analysisRun.current++;
+    setAnalyzing(false);
     const event = replay?.decisions[index]?.event_id;
     if (event != null)
       playback.seek(
@@ -268,6 +288,15 @@ export default function Review({
             </option>
           ))}
         </select>
+        {sessionCursor && (
+          <button
+            className="secondary"
+            disabled={sessionsLoading}
+            onClick={() => void moreSessions()}
+          >
+            Earlier tables
+          </button>
+        )}
         <select
           aria-label="Filter date"
           value={days}
@@ -661,13 +690,10 @@ export default function Review({
                 maxLength={2000}
                 value={note}
                 placeholder="Add a note"
-                onChange={(e) => {
-                  setNote(e.target.value);
-                  setNoteSaved(false);
-                }}
+                onChange={(e) => setNote(e.target.value)}
               />
               <button className="secondary" disabled={saving}>
-                {noteSaved ? "Saved" : "Save note"}
+                {note === replay.hand.note ? "Saved" : "Save note"}
               </button>
             </form>
           )}
@@ -692,7 +718,10 @@ function RangeGrid({
   const [error, setError] = useState("");
   useEffect(() => {
     let cancelled = false;
-    api<{ hands: string[] }>("/ranges/expand", { range: value })
+    const expansion = value.trim()
+      ? api<{ hands: string[] }>("/ranges/expand", { range: value })
+      : Promise.resolve({ hands: [] });
+    expansion
       .then((data) => {
         if (!cancelled) {
           setExpanded({ value, hands: data.hands });

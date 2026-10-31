@@ -784,6 +784,8 @@ export interface components {
         SessionList: {
             /** Sessions */
             sessions: components["schemas"]["SessionSummary"][];
+            /** Next Cursor */
+            next_cursor: string | null;
         };
         /** SessionSummary */
         SessionSummary: {
@@ -992,7 +994,10 @@ export interface operations {
     };
     sessions_api_v1_sessions_get: {
         parameters: {
-            query?: never;
+            query?: {
+                before?: string | null;
+                active?: boolean;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1006,6 +1011,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SessionList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
