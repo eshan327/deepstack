@@ -24,10 +24,11 @@ export default function ActionDock({
 }) {
   const low = s?.legal.min_raise_to ?? 0;
   const high = s?.legal.max_raise_to ?? 0;
-  const [raw, setRaw] = useState(() => (low ? String(low / 100) : ""));
+  const sizingLow = Math.min(high, Math.ceil(low / 100) * 100);
+  const [raw, setRaw] = useState(() => (low ? String(sizingLow / 100) : ""));
   const amount = Math.round(Number(raw) * 100);
   const valid =
-    /^(?:\d+|\d*\.\d{1,2})$/.test(raw) &&
+    (/^\d+$/.test(raw) || (amount === high && /^\d+\.\d{1,2}$/.test(raw))) &&
     Number.isFinite(amount) &&
     Number.isSafeInteger(amount) &&
     amount >= low &&
@@ -136,14 +137,30 @@ export default function ActionDock({
         </span>
       </section>
     );
-  const setAmount = (value: number) => setRaw(String(value / 100));
+  const setAmount = (value: number) =>
+    setRaw(
+      String(
+        (value === high
+          ? high
+          : Math.max(
+              sizingLow,
+              Math.min(
+                Math.floor(high / 100) * 100,
+                Math.round(value / 100) * 100,
+              ),
+            )) / 100,
+      ),
+    );
   return (
     <section className="action-dock" aria-label="Betting controls">
       <div className="call-amount">
-        <strong>
-          {s.legal.check ? "Your move" : `${format(s.legal.call || 0)} to call`}
-        </strong>
-        <span>Pot {format(s.pot)}</span>
+        <strong>Your move</strong>
+        <span className="call-price">
+          {s.legal.check
+            ? "Check or bet"
+            : `${format(s.legal.call || 0)} to call`}
+        </span>
+        <small>Pot {format(s.pot)}</small>
       </div>
       <div className="sizing-controls">
         <label className="amount-label">
@@ -153,7 +170,7 @@ export default function ActionDock({
             <input
               aria-label="Raise to amount"
               aria-describedby="raise-limits"
-              inputMode="decimal"
+              inputMode="numeric"
               type="text"
               value={raw}
               onChange={(e) => setRaw(e.target.value)}
@@ -179,15 +196,15 @@ export default function ActionDock({
             type="range"
             aria-label="Bet size"
             aria-valuetext={money(amount || low)}
-            min={low}
+            min={sizingLow}
             max={high}
-            step={1}
-            value={Math.max(low, Math.min(high, amount || low))}
+            step={100}
+            value={Math.max(sizingLow, Math.min(high, amount || sizingLow))}
             onChange={(e) => setAmount(Number(e.target.value))}
             disabled={!low}
           />
           <div className="range-labels" id="raise-limits">
-            <span>{low ? format(low) : "No raise available"}</span>
+            <span>{low ? format(sizingLow) : "No raise available"}</span>
             <span>{high ? `${format(high)} (All-in)` : ""}</span>
           </div>
         </div>
@@ -204,15 +221,23 @@ export default function ActionDock({
           className="call-button"
           onClick={() => onAct({ kind: s.legal.check ? "check" : "call" })}
         >
-          {s.legal.check ? "Check" : `Call ${format(s.legal.call || 0)}`}
+          <span>{s.legal.check ? "Check" : "Call"}</span>
+          {!s.legal.check && (
+            <>
+              {" "}
+              <strong>{format(s.legal.call || 0)}</strong>
+            </>
+          )}
         </button>
         <button
           className="raise-button"
           disabled={!low || !valid}
           onClick={() => onAct({ kind: "raise_to", amount })}
         >
-          {s.seats[0].bet || s.legal.call || 0 ? "Raise to" : "Bet"}{" "}
-          {valid ? format(amount) : "—"}
+          <span>
+            {s.seats[0].bet || s.legal.call || 0 ? "Raise to" : "Bet"}
+          </span>{" "}
+          <strong>{valid ? format(amount) : "—"}</strong>
         </button>
       </div>
     </section>

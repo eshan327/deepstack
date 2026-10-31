@@ -322,7 +322,6 @@ test("lost response retries settle an actual all-in side pot once", async ({
   await expect(
     page.getByRole("region", { name: "Betting controls" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "All-in", exact: true }).click();
   let calls = 0;
   await page.route("**/commands", async (route) => {
     if (calls++ === 0) {
@@ -330,7 +329,7 @@ test("lost response retries settle an actual all-in side pot once", async ({
       await route.abort("failed");
     } else await route.continue();
   });
-  await page.getByRole("button", { name: /^Raise to \$600/ }).click();
+  await page.getByRole("button", { name: "Call $200", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Retry", exact: true }),
   ).toBeVisible();
@@ -384,7 +383,7 @@ test("manual pacing and hidden tabs wait; player notes preserve a drafted raise"
   });
   await drain(page);
   const amount = page.getByRole("textbox", { name: "Raise to amount" });
-  await amount.fill("123.45");
+  await amount.fill("123");
   await page.locator('.play-workspace [data-seat="1"] .nameplate').click();
   await page
     .getByRole("textbox", { name: "Notes", exact: true })
@@ -394,7 +393,7 @@ test("manual pacing and hidden tabs wait; player notes preserve a drafted raise"
     page.getByRole("button", { name: "Saved", exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Close panel" }).click();
-  await expect(amount).toHaveValue("123.45");
+  await expect(amount).toHaveValue("123");
 });
 
 for (let players = 2; players <= 9; players++) {
@@ -599,7 +598,7 @@ test("nine-seat revealed cards and full board remain readable", async ({
   }
 });
 
-test("table sounds opt in, persist, and do not replay on reload; cards deal seat by seat", async ({ page }) => {
+test("table sounds default on, mute persists, and old sounds do not replay on reload; cards deal seat by seat", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   page.on("console", (message) => {
@@ -626,10 +625,7 @@ test("table sounds opt in, persist, and do not replay on reload; cards deal seat
   await page.getByLabel("Presentation speed").selectOption("manual");
   await page.getByRole("button", { name: "Your account" }).click();
   const sounds = page.getByRole("switch", { name: "Table sounds" });
-  await expect(sounds).not.toBeChecked();
-  const saved = page.waitForResponse((r) => r.url().endsWith("/me") && r.request().method() === "POST" && r.request().postDataJSON().preferences.sounds);
-  await sounds.check();
-  expect((await saved).ok()).toBeTruthy();
+  await expect(sounds).toBeChecked();
   await page.getByRole("button", { name: "Close panel" }).click();
   const dealt = page.waitForResponse((r) => r.url().endsWith("/commands"));
   await page.getByRole("button", { name: "Deal first hand" }).click();
@@ -659,6 +655,11 @@ test("table sounds opt in, persist, and do not replay on reload; cards deal seat
   await page.getByRole("button", { name: "Your account" }).click();
   await expect(page.getByRole("switch", { name: "Table sounds" })).toBeChecked();
   expect(await page.evaluate(() => (window as typeof window & { soundStarts: number }).soundStarts)).toBe(0);
+  const muted = page.waitForResponse((r) => r.url().endsWith("/me") && r.request().method() === "POST" && !r.request().postDataJSON().preferences.sounds);
   await page.getByRole("switch", { name: "Table sounds" }).uncheck();
+  expect((await muted).ok()).toBeTruthy();
+  await page.reload();
+  await page.getByRole("button", { name: "Your account" }).click();
+  await expect(page.getByRole("switch", { name: "Table sounds" })).not.toBeChecked();
   expect(errors).toEqual([]);
 });

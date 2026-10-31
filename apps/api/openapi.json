@@ -905,6 +905,66 @@
       },
       "AnalysisResult": {
         "properties": {
+          "method": {
+            "type": "string",
+            "enum": [
+              "exact",
+              "monte_carlo"
+            ],
+            "title": "Method"
+          },
+          "win": {
+            "type": "number",
+            "title": "Win"
+          },
+          "tie": {
+            "type": "number",
+            "title": "Tie"
+          },
+          "loss": {
+            "type": "number",
+            "title": "Loss"
+          },
+          "range_combos": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Range Combos"
+          },
+          "made_hand": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Made Hand"
+          },
+          "call_ev": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Call Ev"
+          },
+          "spr": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spr"
+          },
           "equity": {
             "type": "number",
             "title": "Equity"
@@ -961,6 +1021,14 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
+          "method",
+          "win",
+          "tie",
+          "loss",
+          "range_combos",
+          "made_hand",
+          "call_ev",
+          "spr",
           "equity",
           "uncertainty",
           "samples",
@@ -1556,7 +1624,7 @@
           "sounds": {
             "type": "boolean",
             "title": "Sounds",
-            "default": false
+            "default": true
           },
           "actionLog": {
             "type": "boolean",
@@ -1598,7 +1666,7 @@
           "sounds": {
             "type": "boolean",
             "title": "Sounds",
-            "default": false
+            "default": true
           },
           "actionLog": {
             "type": "boolean",

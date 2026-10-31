@@ -5,7 +5,7 @@ export const defaultPreferences: Preferences = {
   pace: "deliberate",
   fourColor: false,
   reducedMotion: false,
-  sounds: false,
+  sounds: true,
   actionLog: false,
 };
 
@@ -16,7 +16,7 @@ export function restorePreferences(
     bb: saved.bb === true,
     fourColor: saved.fourColor === true,
     reducedMotion: saved.reducedMotion === true,
-    sounds: saved.sounds === true,
+    sounds: saved.sounds !== false,
     actionLog: saved.actionLog === true,
     pace:
       saved.pace === "manual" || saved.pace === "brisk"

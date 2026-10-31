@@ -69,6 +69,14 @@ def restore(table: dict):
     return state
 
 
+def round_raise(amount: int, low: int, high: int, bb: int) -> int:
+    amount = max(low, min(high, amount))
+    # Preserve exact all-ins and sub-dollar games; normal dollar tables wager whole dollars.
+    if bb < 100 or amount == high:
+        return amount
+    return min(high, max(((low + 99) // 100) * 100, ((amount + 50) // 100) * 100))
+
+
 def legal_actions(state, bb: int) -> LegalActions:
     legal = LegalActions()
     if state.actor_index is None:
@@ -100,7 +108,7 @@ def legal_actions(state, bb: int) -> LegalActions:
         ]
     for label, value in [*suggestions, ("All-in", high)]:
         if value is not None:
-            value = max(low, min(high, value))
+            value = round_raise(value, low, high, bb)
             if state.can_complete_bet_or_raise_to(value):
                 legal.presets.append(Preset(label=label, amount=value))
     return legal
@@ -232,7 +240,9 @@ def perform(table: dict, state, name: str, args: list | None = None):
             if name == "complete_bet_or_raise_to"
             else "Blind"
         )
-        hand["last"][str(seat)] = label if not amount else f"{label} ${amount / 100:,.2f}"
+        hand["last"][str(seat)] = (
+            label if not amount else f"{label} $" + f"{amount / 100:,.2f}".removesuffix(".00")
+        )
         text = f"{who}: {hand['last'][str(seat)]}"
         if name in ("check_or_call", "complete_bet_or_raise_to", "fold"):
             action_kind = (

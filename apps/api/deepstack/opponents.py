@@ -28,6 +28,7 @@ class Traits:
     tilt_sensitivity: float
     fatigue_rate: float
     attentiveness: float
+    deception: float = 0.15
 
 
 def sample(field: str, rng: Random) -> dict:
@@ -57,6 +58,7 @@ def sample(field: str, rng: Random) -> dict:
         tilt_sensitivity=rng.betavariate(1.5, 1.5),
         fatigue_rate=rng.uniform(0.001, 0.012),
         attentiveness=rng.betavariate(1.4, 1.4),
+        deception=rng.betavariate(1.2, 4.0),
     )
     return {
         "traits": asdict(traits),

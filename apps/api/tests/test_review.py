@@ -39,15 +39,21 @@ def context(cards=("As", "Ah"), board=("Ac", "Ad", "2h", "3h", "4h"), side=False
 
 def test_analysis_known_winner_tie_and_call_price():
     result = analyze(context(), AnalysisRequest(decision=0, ranges={1: "KhKd"}))
-    assert result.equity == 1 and result.samples == 512
-    assert result.call_threshold == 0.25 and result.uncertainty > 0
+    assert result.equity == 1 and result.samples == 1
+    assert result.method == "exact" and result.uncertainty == 0
+    assert result.win == 1 and result.tie == result.loss == 0
+    assert result.call_ev == 3000
+    assert result.range_combos == {1: 1}
+    assert result.made_hand == "Four of a kind"
+    assert result.call_threshold == 0.25
     tied = analyze(
         context(("2s", "3s"), ("Ah", "Kh", "Qh", "Jh", "Th")),
         AnalysisRequest(decision=0, ranges={1: "4s5s"}),
     )
-    assert tied.equity == 0.5
+    assert tied.equity == 0.5 and tied.tie == 1 and tied.win == tied.loss == 0
+    assert tied.call_ev == 1000
     side = analyze(context(side=True), AnalysisRequest(decision=0, ranges={1: "KhKd"}))
-    assert side.call_threshold is None and "Side-pot" in side.explanation
+    assert side.call_threshold is None and side.call_ev is None and "Side-pot" in side.explanation
 
 
 @pytest.mark.parametrize("raw", ["AsAh", "not a range", "", "Ac", "????", "AsAs"])
@@ -277,3 +283,26 @@ def test_range_grid_uses_pokerkit_notation(client):
     assert response.status_code == 200
     assert set(response.json()["hands"]) == {"QQ", "KK", "AA", "AKs"}
     assert client.post("/api/v1/ranges/expand", json={"range": "broken"}).status_code == 422
+
+
+def test_exact_turn_enumerates_runouts_and_monte_carlo_reports_uncertainty():
+    turn = analyze(
+        context(board=("Ac", "Ad", "2h", "3h")), AnalysisRequest(decision=0, ranges={1: "KhKd"})
+    )
+    assert turn.method == "exact" and turn.samples == 44
+    assert turn.equity == 1 and turn.uncertainty == 0
+    preflop = analyze(context(board=()), AnalysisRequest(decision=0, ranges={1: "KK"}))
+    assert preflop.method == "monte_carlo" and 32 <= preflop.samples <= 2048
+    assert preflop.uncertainty > 0 and preflop.made_hand is None
+    assert preflop.win + preflop.tie + preflop.loss == pytest.approx(1)
+    assert preflop.range_combos == {1: 6}
+
+
+def test_exact_losing_call_and_blocker_adjusted_ranges():
+    result = analyze(
+        context(cards=("Kh", "Kd"), board=("Ac", "Ad", "2h", "3h", "4h")),
+        AnalysisRequest(decision=0, ranges={1: "AA"}),
+    )
+    assert result.range_combos == {1: 1}
+    assert result.equity == result.win == result.tie == 0
+    assert result.loss == 1 and result.call_ev == -1000

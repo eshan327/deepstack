@@ -72,7 +72,11 @@ export function Card({
       aria-label={back ? "Face-down card" : `${rank} of ${names[suit]}`}
     >
       {back && (
-        <svg className="card-back-emblem" viewBox="0 0 100 100" aria-hidden="true">
+        <svg
+          className="card-back-emblem"
+          viewBox="0 0 100 100"
+          aria-hidden="true"
+        >
           <Suit suit="s" x={0} y={0} size={100} />
         </svg>
       )}
@@ -173,15 +177,15 @@ function Seat({
       className={`seat seat-${p.seat} ${hero ? "hero-seat" : ""} ${actor ? "acting" : ""} ${latest ? "latest-action" : ""} ${p.folded || p.sitting_out ? "inactive" : ""} ${p.winnings ? "winner" : ""}`}
     >
       <div className="hole-cards" aria-hidden={!hero && p.folded}>
-        {p.cards.length ? (
-          p.cards.map((card, i) => (
-            <Card key={`${card}-${i}`} card={card} small={!hero} />
-          ))
-        ) : p.in_hand && !complete && dealt > 0 ? (
-          Array.from({ length: Math.min(2, dealt) }, (_, i) => (
-            <Card key={i} back small />
-          ))
-        ) : null}
+        {p.cards.length
+          ? p.cards.map((card, i) => (
+              <Card key={`${card}-${i}`} card={card} small={!hero} />
+            ))
+          : p.in_hand && !complete && dealt > 0
+            ? Array.from({ length: Math.min(2, dealt) }, (_, i) => (
+                <Card key={i} back small />
+              ))
+            : null}
       </div>
       <button
         className="nameplate"
@@ -276,7 +280,7 @@ export default function PokerTable({
               </strong>
             </div>
             <div className="board" aria-label="Board">
-              {Array.from({ length: 5 }, (_, i) =>
+              {Array.from({ length: view.board.length || 5 }, (_, i) =>
                 view.board[i] ? (
                   <Card
                     key={view.board[i]}
@@ -307,6 +311,8 @@ export default function PokerTable({
             const style = {
               "--seat-x": `${50 + 40 * Math.cos(angle)}%`,
               "--seat-y": `${48 + 40 * Math.sin(angle)}%`,
+              "--wager-direction":
+                Math.abs(horizontal) < 0.2 ? 1 : -Math.sign(horizontal),
               "--wager-x":
                 Math.abs(horizontal) < 0.2
                   ? "clamp(130px, 12cqw, 140px)"
@@ -335,7 +341,11 @@ export default function PokerTable({
                 onSelect={onSelect}
                 bb={bb}
                 complete={view.complete}
-                dealt={dealtSeats ? dealtSeats.filter((seat) => seat === p.seat).length : 2}
+                dealt={
+                  dealtSeats
+                    ? dealtSeats.filter((seat) => seat === p.seat).length
+                    : 2
+                }
               />
             );
           })}

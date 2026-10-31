@@ -221,7 +221,7 @@ class Preferences(Model):
     pace: Literal["deliberate", "brisk", "manual"] = "deliberate"
     fourColor: bool = False
     reducedMotion: bool = False
-    sounds: bool = False
+    sounds: bool = True
     actionLog: bool = False
 
 
@@ -262,6 +262,14 @@ class AnalysisRequest(Model):
 
 
 class AnalysisResult(Model):
+    method: Literal["exact", "monte_carlo"]
+    win: float
+    tie: float
+    loss: float
+    range_combos: dict[int, int]
+    made_hand: str | None
+    call_ev: float | None
+    spr: float | None
     equity: float
     uncertainty: float
     samples: int

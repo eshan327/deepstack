@@ -26,6 +26,16 @@ with db.factory()() as conn, conn.begin():
     state = engine.restore(table)
     while engine.advance_forced(table, state):
         pass
+    if scenario == "side-pot":
+        # Fix the public betting situation, not bot personalities or willingness to call.
+        for action in (
+            {"kind": "raise_to", "amount": 20000},
+            {"kind": "call"},
+            {"kind": "raise_to", "amount": 40000},
+        ):
+            engine.act(table, state, action)
+            while engine.advance_forced(table, state):
+                pass
     if scenario == "nine-max":
         assert len(table["seats"]) == 9
         engine.act(table, state, {"kind": "raise_to", "amount": 60000})

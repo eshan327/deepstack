@@ -340,7 +340,7 @@ def test_current_players_pending_action_and_stakes_shape_preflop():
         b = bots.choose(scaled, copy.deepcopy(m), Random(i))
         assert a["kind"] == b["kind"]
         if a["kind"] == "raise_to":
-            assert abs(b["amount"] - 5 * a["amount"]) <= 3
+            assert abs(b["amount"] - 5 * a["amount"]) <= 100
 
 
 def test_spr_multiway_barrels_commitment_and_all_in_fold_equity(monkeypatch):
@@ -418,3 +418,53 @@ def test_projection_uses_public_stack_commitments_and_pending_players():
     assert len(v.opponents) == 1 and v.players == 3
     assert v.players_behind == 0
     assert v.committed == 20
+
+
+def test_individual_deception_changes_trapping_and_legacy_models_still_work(monkeypatch):
+    t, state = table(2)
+    view = replace(
+        session.bot_view(t, state),
+        board=("2c", "7d", "Jh"),
+        cards=("Js", "Jd"),
+        pot=1000,
+        own_bet=0,
+        stack=6000,
+        effective_stack=6000,
+        in_position=True,
+        legal=LegalActions(check=True, min_raise_to=200, max_raise_to=6000),
+        opponents=(bots.Opponent(1, stack=6000),),
+    )
+    monkeypatch.setattr(bots, "equity", lambda *args: 0.98)
+    straightforward, tricky = model(), model()
+    straightforward["traits"]["deception"] = 0
+    tricky["traits"]["deception"] = 0.9
+
+    def checks(player):
+        return sum(
+            bots.choose(view, copy.deepcopy(player), Random(seed))["kind"] == "check"
+            for seed in range(1000)
+        )
+
+    assert checks(tricky) > checks(straightforward) + 100
+    assert tricky["traits"]["deception"] == 0.9
+    legacy = model()
+    del legacy["traits"]["deception"]
+    assert bots.choose(view, legacy, Random(1))["kind"] in {"check", "raise_to"}
+
+
+@pytest.mark.parametrize(
+    ("cards", "board", "expected"),
+    [
+        (("As", "Ks"), ("Qs", "Js", "2h"), True),
+        (("Ah", "Kh"), ("Qc", "Jd", "2s"), True),
+        (("As", "2d"), ("3c", "4h", "Kd"), True),
+        (("As", "Kd"), ("2h", "7h", "9h", "Jh"), False),
+        (("As", "Kd"), ("5c", "6d", "7h", "8c"), False),
+        (("4d", "Kd"), ("5c", "6d", "7h", "2c"), True),
+        (("Ah", "Kh"), ("2c", "7d", "Js"), False),
+        (("As", "Kh"), ("2h", "7h", "9h", "Jh"), False),
+        (("As", "Kh"), ("2h", "7h", "Jh", "Qc", "3d"), False),
+    ],
+)
+def test_draws_require_hole_card_contribution_and_an_unfinished_board(cards, board, expected):
+    assert bots.has_draw(cards, board) is expected

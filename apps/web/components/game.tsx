@@ -404,6 +404,19 @@ export default function Game() {
             </button>
           )}
           <button
+            className="icon-button"
+            aria-label="Toggle table sounds"
+            aria-pressed={preferences.sounds}
+            title={
+              preferences.sounds ? "Mute table sounds" : "Enable table sounds"
+            }
+            onClick={() =>
+              updatePreferences({ ...preferences, sounds: !preferences.sounds })
+            }
+          >
+            <Icon name={preferences.sounds ? "sound" : "muted"} />
+          </button>
+          <button
             aria-label="Table settings"
             className="icon-button"
             onClick={() => setPanel("settings")}

@@ -273,8 +273,13 @@ def test_opponent_fields_shift_populations_at_every_table_size():
         tough = session.new_table("tough", TableConfig(players=count, field="tough"), rng=Random(1))
         for a, b in zip(soft["seats"][1:], tough["seats"][1:]):
             assert a["name"] == b["name"]
-            assert a["bot"]["traits"]["looseness"] > b["bot"]["traits"]["looseness"]
-            assert a["bot"]["traits"]["aggression"] < b["bot"]["traits"]["aggression"]
+            assert a["bot"]["traits"]["looseness"] >= b["bot"]["traits"]["looseness"]
+            assert a["bot"]["traits"]["aggression"] <= b["bot"]["traits"]["aggression"]
+        # Individual traits can meet at a clamp boundary; the table still shifts overall.
+        for trait, direction in (("looseness", 1), ("aggression", -1)):
+            assert direction * sum(s["bot"]["traits"][trait] for s in soft["seats"][1:]) > (
+                direction * sum(s["bot"]["traits"][trait] for s in tough["seats"][1:])
+            )
 
 
 def test_winnings_above_buy_in_limit_remain_playable():
@@ -307,3 +312,20 @@ def test_winnings_above_buy_in_limit_remain_playable():
         Command(command_id=uuid4(), expected_version=0, kind="top_up", seat=0, amount=cap + 1)
     with pytest.raises(ValueError):
         Action(kind="raise_to", amount=9_000_000_000_000_001)
+
+
+@pytest.mark.parametrize(
+    ("amount", "low", "high", "bb", "expected"),
+    [
+        (251, 251, 10000, 200, 300),
+        (849, 400, 10000, 200, 800),
+        (851, 400, 10000, 200, 900),
+        (1049, 400, 1049, 200, 1049),
+        (410, 401, 451, 200, 451),
+        (51, 40, 1000, 20, 51),
+    ],
+)
+def test_whole_dollar_sizing_preserves_legal_limits_and_exact_all_ins(
+    amount, low, high, bb, expected
+):
+    assert engine.round_raise(amount, low, high, bb) == expected

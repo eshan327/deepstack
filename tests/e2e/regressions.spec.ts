@@ -43,7 +43,9 @@ const replay = {
   })),
 };
 const analysis = {
-  equity: 0.7, uncertainty: 0.05, samples: 512, call_threshold: null,
+  method: "monte_carlo", win: 0.65, tie: 0.1, loss: 0.25,
+  range_combos: { 1: 990 }, made_hand: "High card", call_ev: null, spr: 100,
+  equity: 0.7, uncertainty: 0.05, samples: 2048, call_threshold: null,
   call_amount: 0, pot: 600, effective_stack: 60000, ranges: {}, explanation: "Flop estimate.",
 };
 
@@ -139,12 +141,12 @@ for (const jump of ["decision", "street"]) {
     else await page.locator(".street-tabs").getByRole("button", { name: "Flop", exact: true }).click();
     await expect(page.getByRole("button", { name: "Analyze decision", exact: true })).toBeEnabled();
     await page.getByRole("button", { name: "Analyze decision", exact: true }).click();
-    await expect(page.locator(".equity-result")).toContainText("70%");
+    await expect(page.locator(".equity-result")).toContainText("70.0%");
     const stale = page.waitForResponse((r) => r.url().endsWith("/analysis") && r.request().postDataJSON().decision === 0);
     release();
     await stale;
     await expect(page.getByRole("button", { name: "Recalculate", exact: true })).toBeEnabled();
-    await expect(page.locator(".equity-result")).toContainText("70%");
+    await expect(page.locator(".equity-result")).toContainText("70.0%");
   });
 }
 
@@ -250,4 +252,67 @@ test("startup finds an old active table independently of recent history", async 
   await page.goto("/");
   await expect(page.getByRole("button", { name: "Deal first hand", exact: true })).toBeVisible();
   await expect.poll(() => page.evaluate(() => localStorage.getItem("deepstack.session"))).toBe(older);
+});
+
+
+for (const width of [1440, 390]) {
+  test(`analysis explains equity and call EV at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
+    const errors: string[] = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    page.on("console", (m) => { if (m.type() === "error") errors.push(m.text()); });
+    await openReview(page);
+    await page.route(`**/hands/${hid}/analysis`, (route) => route.fulfill({ json: {
+      ...analysis, method: width === 390 ? "exact" : "monte_carlo",
+      uncertainty: width === 390 ? 0 : 0.05, call_threshold: 0.25, call_ev: 1800,
+    } }));
+    await page.getByRole("button", { name: "Analyze decision", exact: true }).click();
+    const result = page.getByRole("region", { name: "Analysis results" });
+    await expect(result).toBeVisible();
+    await expect(result).toContainText("70.0%");
+    await expect(result).toContainText("65.0%");
+    await expect(result).toContainText("10.0%");
+    await expect(result).toContainText("25.0%");
+    await expect(result).toContainText("+$18");
+    await expect(result).toContainText("no further betting");
+    await expect(result).toContainText(width === 390 ? "Exact enumeration" : "Monte Carlo");
+    if (width === 390) await expect(result).not.toContainText("±");
+    await page.locator(".review-ranges summary").click();
+    await expect(page.locator(".range-editor")).toContainText("990 combos");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await result.scrollIntoViewIfNeeded();
+    await page.screenshot({ path: `/tmp/deepstack-qa/analysis-${width}.png`, fullPage: width > 390 });
+    expect(errors).toEqual([]);
+  });
+}
+
+
+test("bet sizing uses whole dollars and preserves an exact fractional all-in", async ({ page }) => {
+  await mockApp(page);
+  const legal = { ...snapshot.legal, fold: true, call: 200, min_raise_to: 451,
+    max_raise_to: 1049, presets: [{ label: "Min", amount: 500 }, { label: "All-in", amount: 1049 }] };
+  await page.route(`**/api/v1/sessions/${sid}`, (route) => route.fulfill({ json: {
+    snapshot: { ...preflop, legal }, events: [],
+  } }));
+  let action: unknown;
+  await page.route("**/commands", (route) => {
+    action = route.request().postDataJSON().action;
+    return route.fulfill({ json: { snapshot: { ...preflop, legal }, events: [] } });
+  });
+  await page.goto("/");
+  const input = page.getByRole("textbox", { name: "Raise to amount" });
+  await expect(input).toHaveValue("5");
+  await expect(page.getByRole("slider", { name: "Bet size", exact: true })).toHaveAttribute("step", "100");
+  await input.fill("5.50");
+  await expect(input).toHaveAttribute("aria-invalid", "true");
+  await expect(page.locator(".raise-button")).toBeDisabled();
+  await input.fill("6");
+  await expect(page.locator(".raise-button")).toHaveText("Raise to $6");
+  await page.locator(".raise-button").click();
+  expect(action).toEqual({ kind: "raise_to", amount: 600 });
+  await page.getByRole("button", { name: "All-in", exact: true }).click();
+  await expect(input).toHaveValue("10.49");
+  await expect(page.locator(".raise-button")).toBeEnabled();
+  await page.locator(".raise-button").click();
+  expect(action).toEqual({ kind: "raise_to", amount: 1049 });
 });

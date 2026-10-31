@@ -330,6 +330,27 @@ export interface components {
         };
         /** AnalysisResult */
         AnalysisResult: {
+            /**
+             * Method
+             * @enum {string}
+             */
+            method: "exact" | "monte_carlo";
+            /** Win */
+            win: number;
+            /** Tie */
+            tie: number;
+            /** Loss */
+            loss: number;
+            /** Range Combos */
+            range_combos: {
+                [key: string]: number;
+            };
+            /** Made Hand */
+            made_hand: string | null;
+            /** Call Ev */
+            call_ev: number | null;
+            /** Spr */
+            spr: number | null;
             /** Equity */
             equity: number;
             /** Uncertainty */
@@ -600,7 +621,7 @@ export interface components {
             reducedMotion: boolean;
             /**
              * Sounds
-             * @default false
+             * @default true
              */
             sounds: boolean;
             /**
@@ -634,7 +655,7 @@ export interface components {
             reducedMotion: boolean;
             /**
              * Sounds
-             * @default false
+             * @default true
              */
             sounds: boolean;
             /**

@@ -267,7 +267,7 @@ export default function Review({
     <section className="review-workspace" aria-label="Review workspace">
       <div className="review-heading">
         <h1>Review</h1>
-        <button className="secondary" onClick={onResume}>
+        <button className="primary" onClick={onResume}>
           Resume table
         </button>
       </div>
@@ -574,13 +574,47 @@ export default function Review({
                   <dd>{money(context.effective_stack, bb)}</dd>
                 </div>
               </dl>
-              {analysis && (
-                <div className="equity-result">
-                  <div>
-                    <span>Equity</span>
-                    <strong>{Math.round(analysis.equity * 100)}%</strong>
+              <div
+                className="decision-cards"
+                aria-label="Cards at this decision"
+              >
+                <div>
+                  <span>Your hand</span>
+                  <div className="mini-hand">
+                    {context.view.seats[0].cards.map((c) => (
+                      <Card card={c} key={c} small />
+                    ))}
                   </div>
-                  <div className="equity-bar">
+                </div>
+                <div>
+                  <span>{context.view.street}</span>
+                  <div className="mini-hand">
+                    {context.view.board.length ? (
+                      context.view.board.map((c) => (
+                        <Card card={c} key={c} small />
+                      ))
+                    ) : (
+                      <small>No board yet</small>
+                    )}
+                  </div>
+                </div>
+              </div>
+              {analysis ? (
+                <section
+                  className="equity-result"
+                  aria-label="Analysis results"
+                  aria-live="polite"
+                >
+                  <div className="equity-heading">
+                    <span>
+                      Equity <small>share of the pot</small>
+                    </span>
+                    <strong>
+                      {(analysis.equity * 100).toFixed(1)}
+                      <small>%</small>
+                    </strong>
+                  </div>
+                  <div className="equity-bar" aria-hidden="true">
                     <span style={{ width: `${analysis.equity * 100}%` }} />
                     {analysis.call_threshold != null && (
                       <i
@@ -588,20 +622,88 @@ export default function Review({
                       />
                     )}
                   </div>
-                  <p className="muted small">
-                    ±{Math.ceil(analysis.uncertainty * 100)} percentage points ·{" "}
-                    {analysis.samples} samples
+                  <p className="analysis-precision">
+                    {analysis.method === "exact"
+                      ? "Exact enumeration"
+                      : `Monte Carlo · ±${(analysis.uncertainty * 100).toFixed(1)} pp (approx. 95%)`}
+                    <span>
+                      {analysis.samples.toLocaleString()}{" "}
+                      {analysis.method === "exact" ? "outcomes" : "samples"}
+                    </span>
                   </p>
-                  {analysis.call_threshold != null && (
-                    <p className="threshold">
-                      Call price{" "}
-                      <strong>
-                        {Math.round(analysis.call_threshold * 100)}%
-                      </strong>
-                    </p>
-                  )}
+                  <div className="outcome-bar" aria-hidden="true">
+                    <span
+                      className="outcome-win"
+                      style={{ width: `${analysis.win * 100}%` }}
+                    />
+                    <span
+                      className="outcome-tie"
+                      style={{ width: `${analysis.tie * 100}%` }}
+                    />
+                    <span
+                      className="outcome-loss"
+                      style={{ width: `${analysis.loss * 100}%` }}
+                    />
+                  </div>
+                  <dl className="outcome-legend">
+                    {(
+                      [
+                        ["Win", analysis.win],
+                        ["Tie", analysis.tie],
+                        ["Lose", analysis.loss],
+                      ] as const
+                    ).map(([label, value]) => (
+                      <div key={label}>
+                        <dt>{label}</dt>
+                        <dd>{(value * 100).toFixed(1)}%</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <dl className="decision-facts analysis-metrics">
+                    {analysis.made_hand && (
+                      <div>
+                        <dt>Current hand</dt>
+                        <dd>{analysis.made_hand}</dd>
+                      </div>
+                    )}
+                    {analysis.spr != null && (
+                      <div>
+                        <dt>Stack / pot</dt>
+                        <dd>{analysis.spr.toFixed(1)}</dd>
+                      </div>
+                    )}
+                    {analysis.call_threshold != null && (
+                      <div>
+                        <dt>Break-even equity</dt>
+                        <dd>{(analysis.call_threshold * 100).toFixed(1)}%</dd>
+                      </div>
+                    )}
+                    {analysis.call_ev != null && (
+                      <div>
+                        <dt>Checkdown call EV</dt>
+                        <dd
+                          className={
+                            analysis.call_ev >= 0 ? "positive" : "negative"
+                          }
+                        >
+                          {analysis.call_ev > 0 ? "+" : ""}
+                          {money(Math.round(analysis.call_ev), bb)}
+                        </dd>
+                      </div>
+                    )}
+                  </dl>
                   <p className="analysis-explanation">{analysis.explanation}</p>
-                </div>
+                  <p className="muted small analysis-assumptions">
+                    Uniform ranges; ties split the pot. Call EV assumes no further
+                    betting or contributions. Estimates, not solver grades.
+                  </p>
+                </section>
+              ) : (
+                <p className="analysis-empty" role="status">
+                  {analyzing
+                    ? "Evaluating compatible ranges and board runouts…"
+                    : "Set opponent ranges, then analyze this decision."}
+                </p>
               )}
               <details className="review-ranges">
                 <summary>
@@ -613,7 +715,13 @@ export default function Review({
                 {opponents.map((p) => (
                   <div className="range-editor" key={p.seat}>
                     <label className="form-label">
-                      {p.name} <span className="muted">{p.position}</span>
+                      {p.name}{" "}
+                      <span className="muted">
+                        {p.position}
+                        {analysis
+                          ? ` · ${analysis.range_combos[p.seat]?.toLocaleString()} combos`
+                          : ""}
+                      </span>
                       <input
                         aria-label={`${p.name} range`}
                         maxLength={1000}
@@ -655,7 +763,8 @@ export default function Review({
                 </p>
               </details>
               <button
-                className="secondary full"
+                className="primary full analyze-button"
+                aria-busy={analyzing}
                 disabled={analyzing}
                 onClick={() => void calculate()}
               >

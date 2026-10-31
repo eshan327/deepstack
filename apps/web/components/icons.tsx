@@ -3,6 +3,8 @@ export function Icon({
   size = 20,
 }: {
   name:
+    | "sound"
+    | "muted"
     | "settings"
     | "close"
     | "history"
@@ -17,6 +19,18 @@ export function Icon({
   size?: number;
 }) {
   const paths = {
+    sound: (
+      <>
+        <path d="M11 4 6 8H3v8h3l5 4Z" />
+        <path d="M15 8a6 6 0 0 1 0 8M18 5a10 10 0 0 1 0 14" />
+      </>
+    ),
+    muted: (
+      <>
+        <path d="M11 4 6 8H3v8h3l5 4Z" />
+        <path d="m16 9 6 6m0-6-6 6" />
+      </>
+    ),
     pause: <path d="M8 5v14M16 5v14" />,
     log: (
       <>

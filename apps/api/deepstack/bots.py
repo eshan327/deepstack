@@ -10,6 +10,7 @@ from random import Random
 from pokerkit import Card, Deck, StandardHighHand, parse_range
 
 from . import opponents
+from .engine import round_raise
 from .opponents import Traits, clamp
 from .schemas import LegalActions
 
@@ -84,6 +85,25 @@ def texture(board: tuple[str, ...]) -> float:
     return clamp(0.275 * (suits - 1) + 0.45 * connected)
 
 
+def has_draw(cards: tuple[str, ...], board: tuple[str, ...]) -> bool:
+    if len(board) not in (3, 4):
+        return False
+    suits = Counter(c[1] for c in cards + board)
+    if any(suits[c[1]] == 4 for c in cards):
+        return True
+    own = {"23456789TJQKA".index(c[0]) for c in cards}
+    public = {"23456789TJQKA".index(c[0]) for c in board}
+    for ranks in (own, public):
+        if 12 in ranks:
+            ranks.add(-1)
+    # Board-only draws do not give this player extra equity or a credible semi-bluff.
+    return any(
+        len((own | public).intersection(range(start, start + 5))) == 4
+        and (own - public).intersection(range(start, start + 5))
+        for start in range(-1, 9)
+    )
+
+
 def preflop(v: BotView, p: Traits, rng: Random) -> dict:
     cards = tuple(Card.parse("".join(v.cards)))
     g = group(cards)
@@ -150,7 +170,7 @@ def raise_or_call(v: BotView, amount: int) -> dict:
     low, high = v.legal.min_raise_to, v.legal.max_raise_to
     if low is None or high is None:
         return passive(v, True)
-    return {"kind": "raise_to", "amount": max(low, min(high, amount))}
+    return {"kind": "raise_to", "amount": round_raise(amount, low, high, v.big_blind)}
 
 
 @lru_cache(maxsize=32768)
@@ -188,7 +208,7 @@ def opponent_combos(board: tuple[str, ...], raised: bool, pressure: int):
                     if pressure == 1
                     else [0.045 if len(board) == 5 else 0.15, 0.55, 1.8, 3.0]
                 )[tier]
-                draw = len(board) < 5 and max(Counter(c[1] for c in strings + board).values()) == 4
+                draw = has_draw(strings, board)
                 if draw and not own_pair:
                     weight *= 3.0
             combos.append(strings)
@@ -274,14 +294,7 @@ def choose(v: BotView, model: dict, rng: Random, samples: int = 64) -> dict:
     spr = v.effective_stack / max(1, v.pot)
     committed = v.committed / max(1, v.starting_stack or v.stack + v.committed)
     wet = texture(v.board)
-    suits = Counter(c[1] for c in v.board + v.cards)
-    ranks = {"23456789TJQKA".index(c[0]) for c in v.board + v.cards}
-    if 12 in ranks:
-        ranks.add(-1)
-    draw = len(v.board) < 5 and (
-        max(suits.values()) == 4
-        or any(len(ranks.intersection(range(i, i + 5))) >= 4 for i in range(-1, 9))
-    )
+    draw = has_draw(v.cards, v.board)
     threshold = 0.62 + min(0.2, 0.05 * (rivals - 1)) - 0.1 * curve(1.5 - spr, 0.6)
     value = curve(eq - threshold, 0.08)
     street_bluff = (
@@ -328,7 +341,11 @@ def choose(v: BotView, model: dict, rng: Random, samples: int = 64) -> dict:
     continuation = 0.1 * p.aggression * initiative * (1 - wet) * v.fold_estimate
     if any(o.stack == 0 for o in v.opponents):
         continuation *= clamp(v.side_pot / max(1, v.pot))
-    betting = value * (0.5 + 0.45 * p.aggression) + (1 - value) * (bluff + continuation)
+    # Some players trap strong hands, especially heads-up on dry boards in position.
+    trap = p.deception * value * (1 - wet) * (1 if v.in_position else 0.5) / max(1, rivals)
+    betting = value * (1 - trap) * (0.5 + 0.45 * p.aggression) + (1 - value) * (
+        bluff + continuation
+    )
     if rng.random() < betting:
         if rng.random() < value * curve(1.2 - spr, 0.25):
             return raise_or_call(v, v.own_bet + v.stack)

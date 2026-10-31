@@ -108,10 +108,11 @@ test("legacy preferences migrate without conflating reduced motion and speed", (
 });
 
 
-test("table audio chooses quiet event cues and defaults to off for legacy preferences", () => {
-  assert.equal(restorePreferences({}).sounds, false);
+test("table audio chooses quiet event cues and defaults on while preserving an explicit mute", () => {
+  assert.equal(restorePreferences({}).sounds, true);
   assert.equal(restorePreferences({ sounds: true }).sounds, true);
-  assert.equal(restorePreferences({ sounds: "true" }).sounds, false);
+  assert.equal(restorePreferences({ sounds: false }).sounds, false);
+  assert.equal(restorePreferences({ sounds: "true" }).sounds, true);
   const turn = { ...event(1, "board"), view: { actor: 0, complete: false } } as PublicEvent;
   assert.equal(tableCue(turn, false), "card");
   assert.equal(tableCue(turn, true), "turn");

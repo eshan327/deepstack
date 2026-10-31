@@ -1,7 +1,8 @@
 """Bounded review of public decisions, never of private bot state or future cards."""
 
 from hashlib import blake2b
-from math import sqrt
+from itertools import combinations, product
+from math import comb, prod, sqrt
 from random import Random
 from time import monotonic
 
@@ -40,6 +41,11 @@ def analyze(context: DecisionContext, request: AnalysisRequest) -> AnalysisResul
         if not combos:
             raise ValueError(f"{seat.name}'s range conflicts with the known cards.")
         pools.append(combos)
+    range_combos = {seat.seat: len(pool) for seat, pool in zip(opponents, pools)}
+    missing = 5 - len(view.board)
+    outcomes = prod(map(len, pools)) * comb(52 - len(known) - 2 * len(pools), missing)
+    exact = outcomes <= 20000
+    assignments = iter(product(*pools)) if exact else None
     rng = Random(
         int.from_bytes(
             blake2b(
@@ -49,29 +55,44 @@ def analyze(context: DecisionContext, request: AnalysisRequest) -> AnalysisResul
     )
     deck = tuple(repr(c) for c in Deck.STANDARD)
     count, total, squares, attempts = 0, 0.0, 0.0, 0
+    wins, ties = 0, 0
+    exhausted = False
     deadline = monotonic() + 3
-    while count < 512 and attempts < 32768 and monotonic() < deadline:
+    while (exact or count < 2048) and attempts < 32768 and monotonic() < deadline:
         attempts += 1
-        chosen = [rng.choice(pool) for pool in pools]
+        if assignments is not None:
+            chosen = next(assignments, None)
+            if chosen is None:
+                exhausted = True
+                break
+        else:
+            chosen = [rng.choice(pool) for pool in pools]
         flat = [c for combo in chosen for c in combo]
         if len(set(flat)) != len(flat):
             continue
-        dead = known.union(flat)
-        board = tuple(view.board) + tuple(
-            rng.sample([c for c in deck if c not in dead], 5 - len(view.board))
-        )
-        ours = evaluate(tuple(sorted(tuple(hero.cards) + board)))
-        others = [evaluate(tuple(sorted(combo + board))) for combo in chosen]
-        share = 1 / (1 + sum(h == ours for h in others)) if ours >= max(others) else 0
-        total += share
-        squares += share * share
-        count += 1
-    if count < 32:
+        remaining = [c for c in deck if c not in known and c not in flat]
+        runouts = combinations(remaining, missing) if exact else [rng.sample(remaining, missing)]
+        for runout in runouts:
+            if exact and monotonic() >= deadline:
+                raise ValueError("Exact evaluation timed out. Widen a range and retry.")
+            board = tuple(view.board) + tuple(runout)
+            ours = evaluate(tuple(sorted(tuple(hero.cards) + board)))
+            others = [evaluate(tuple(sorted(combo + board))) for combo in chosen]
+            tied = sum(h == ours for h in others)
+            share = 1 / (1 + tied) if ours >= max(others) else 0
+            wins += share == 1
+            ties += 0 < share < 1
+            total += share
+            squares += share * share
+            count += 1
+    if exact and not exhausted:
+        raise ValueError("Exact evaluation timed out. Widen a range and retry.")
+    if not count or (not exact and count < 32):
         raise ValueError("These ranges have too few compatible combinations. Widen a range.")
     equity = total / count
-    variance = max(0.0, (squares - count * equity * equity) / (count - 1))
+    variance = max(0.0, (squares - count * equity * equity) / max(1, count - 1))
     # The floor avoids false certainty from a finite Monte Carlo sample with no losses.
-    uncertainty = max(1.96 * sqrt(variance / count), 3 / count)
+    uncertainty = 0.0 if exact else max(1.96 * sqrt(variance / count), 3 / count)
     call = context.legal.call or 0
     threshold = call / (view.pot + call) if call and not context.side_pots else None
     depth = context.effective_stack / context.big_blind
@@ -87,6 +108,16 @@ def analyze(context: DecisionContext, request: AnalysisRequest) -> AnalysisResul
         details += " Side-pot call price unavailable."
     return AnalysisResult(
         equity=equity,
+        method="exact" if exact else "monte_carlo",
+        win=wins / count,
+        tie=ties / count,
+        loss=(count - wins - ties) / count,
+        range_combos=range_combos,
+        made_hand=evaluate(tuple(sorted(hero.cards + view.board))).entry.label.value
+        if len(view.board) >= 3
+        else None,
+        call_ev=equity * (view.pot + call) - call if threshold is not None else None,
+        spr=context.effective_stack / view.pot if view.pot else None,
         uncertainty=uncertainty,
         samples=count,
         call_threshold=threshold,
