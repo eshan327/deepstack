@@ -316,3 +316,54 @@ test("bet sizing uses whole dollars and preserves an exact fractional all-in", a
   await page.locator(".raise-button").click();
   expect(action).toEqual({ kind: "raise_to", amount: 1049 });
 });
+
+for (const width of [1440, 390]) {
+  test(`showdown cards stay visible through awards and hand completion at ${width}px`, async ({ page }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    page.on("console", (message) => {
+      if (message.type() === "error") errors.push(message.text());
+    });
+    await page.setViewportSize({ width, height: 900 });
+    await mockApp(page);
+    await page.route(`**/api/v1/sessions/${sid}`, (route) => route.fulfill({ json: {
+      snapshot: { ...flop, legal: { ...snapshot.legal, check: true } }, events: [],
+    } }));
+    const shown = {
+      ...flop, actor: null,
+      seats: flop.seats.map((seat) => ({ ...seat, cards: seat.seat ? ["Kc", "Kh"] : seat.cards })),
+    };
+    const complete = { ...shown, complete: true, street: "Complete", message: "Maya wins." };
+    await page.route("**/commands", (route) => route.fulfill({ json: {
+      snapshot: complete,
+      events: [
+        { id: 1, kind: "show", seat: 1, text: "Maya shows Kc Kh", view: shown },
+        { id: 2, kind: "award", seat: 1, text: "Maya wins", view: shown },
+        { id: 3, kind: "complete", text: "Hand complete", view: complete },
+      ],
+    } }));
+    await page.goto("/");
+    await expect(page).toHaveTitle("Deepstack");
+    await page.getByLabel("Presentation speed").selectOption("manual");
+    await page.getByRole("button", { name: "Check", exact: true }).click();
+    const next = page.getByRole("button", { name: "Next action", exact: true });
+    const table = page.getByRole("region", { name: "Poker table", exact: true });
+    const cards = table.locator(".seat-1 .playing-card");
+    await next.click();
+    await expect(table).toHaveAttribute("data-event", "show");
+    await expect(cards).toHaveCount(2);
+    await cards.evaluateAll((nodes) => {
+      nodes.forEach((card) => card.getAnimations().forEach((animation) => animation.finish()));
+    });
+    for (const kind of ["award", "complete"]) {
+      await next.click();
+      await expect(table).toHaveAttribute("data-event", kind);
+      // A settled card must never start a new fade when the event changes.
+      expect(await cards.evaluateAll((nodes) => nodes.map((card) => getComputedStyle(card).opacity))).toEqual(["1", "1"]);
+      expect(await cards.evaluateAll((nodes) => nodes.flatMap((card) => card.getAnimations()).filter((animation) => animation.playState === "running").length)).toBe(0);
+    }
+    await expect(page.getByRole("button", { name: "Next Hand", exact: true })).toBeEnabled();
+    await page.screenshot({ path: `/tmp/deepstack-showdown-${width}.png` });
+    expect(errors).toEqual([]);
+  });
+}

@@ -1814,7 +1814,8 @@ details > summary {
 @keyframes fade-out {
   to { opacity: 0; }
 }
-.table-stage[data-event="show"] .latest-action:not(.hero-seat) .playing-card {
+/* Keep the reveal animation attached after showdown so card-in cannot restart. */
+.seat:not(.hero-seat) .playing-card:not(.card-back) {
   animation: card-reveal 0.45s ease-out both;
 }
 .wager.awarded {
