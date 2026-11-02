@@ -1,4 +1,5 @@
-import type { CSSProperties } from "react";
+"use client";
+import { useState, type CSSProperties } from "react";
 import { money, type SeatView, type TableView } from "@/lib/api";
 
 const names: Record<string, string> = {
@@ -55,18 +56,25 @@ export function Card({
   back = false,
   small = false,
   order = 0,
+  animate = true,
 }: {
   card?: string;
   back?: boolean;
   small?: boolean;
   order?: number;
+  animate?: boolean;
 }) {
+  // Entrance motion belongs to this mount, not subsequent event changes.
+  const [enter] = useState(animate);
   const suit = card?.[1] || "s";
   const rank = card?.[0] === "T" ? "10" : card?.[0];
   return (
     <div
       className={`playing-card ${back ? "card-back" : ""} ${small ? "card-small" : ""} suit-${suit}`}
-      style={{ "--card-order": order } as CSSProperties}
+      style={{
+        "--card-order": order,
+        animation: enter ? undefined : "none",
+      } as CSSProperties}
       role="img"
       data-card={back ? "back" : card}
       aria-label={back ? "Face-down card" : `${rank} of ${names[suit]}`}
@@ -116,13 +124,20 @@ function Chips({
   amount,
   bb,
   awarded = false,
+  animate,
 }: {
   amount: number;
   bb?: number;
   awarded?: boolean;
+  animate: boolean;
 }) {
+  const [enter] = useState(animate);
   return (
     <div
+      style={{
+        animation: enter ? undefined : "none",
+        opacity: awarded && !enter ? 0 : undefined,
+      }}
       className={`wager ${awarded ? "awarded" : ""}`}
       aria-label={`${awarded ? "Award" : "Wager"} ${money(amount, bb)}`}
     >
@@ -146,6 +161,7 @@ function Seat({
   bb,
   complete,
   dealt,
+  animate,
 }: {
   player: SeatView;
   actor: boolean;
@@ -156,7 +172,9 @@ function Seat({
   bb?: number;
   complete: boolean;
   dealt: number;
+  animate: boolean;
 }) {
+  const [enter] = useState(animate);
   const status = p.sitting_out
     ? "Sitting out"
     : p.winnings
@@ -179,11 +197,16 @@ function Seat({
       <div className="hole-cards" aria-hidden={!hero && p.folded}>
         {p.cards.length
           ? p.cards.map((card, i) => (
-              <Card key={`${card}-${i}`} card={card} small={!hero} />
+              <Card
+                key={`${card}-${i}`}
+                card={card}
+                small={!hero}
+                animate={animate}
+              />
             ))
           : p.in_hand && !complete && dealt > 0
             ? Array.from({ length: Math.min(2, dealt) }, (_, i) => (
-                <Card key={i} back small />
+                <Card key={i} back small animate={animate} />
               ))
             : null}
       </div>
@@ -192,7 +215,11 @@ function Seat({
         onClick={() => onSelect(p.seat)}
         aria-label={`${p.name}, ${money(p.stack, bb)}${p.position ? `, ${p.position}` : ""}. Open player details`}
       >
-        <span className="monogram" aria-hidden="true">
+        <span
+          className="monogram"
+          style={{ animation: animate ? undefined : "none" }}
+          aria-hidden="true"
+        >
           {p.name[0]}
         </span>
         <span className="seat-details">
@@ -208,6 +235,7 @@ function Seat({
         {p.dealer && (
           <span
             className="dealer"
+            style={{ animation: enter ? undefined : "none" }}
             key={`button-${p.seat}`}
             aria-label="Dealer button"
           >
@@ -223,8 +251,18 @@ function Seat({
           </span>
         )}
       </div>
-      {p.bet > 0 && <Chips key={p.bet} amount={p.bet} bb={bb} />}
-      {p.winnings > 0 && <Chips awarded amount={p.winnings} bb={bb} />}
+      {p.bet > 0 && !p.winnings && (
+        <Chips key={p.bet} amount={p.bet} bb={bb} animate={animate} />
+      )}
+      {p.winnings > 0 && (
+        <Chips
+          key={`award-${p.winnings}`}
+          awarded
+          amount={p.winnings}
+          bb={bb}
+          animate={animate}
+        />
+      )}
     </div>
   );
 }
@@ -238,6 +276,8 @@ export default function PokerTable({
   latestSeat,
   eventKind,
   dealtSeats,
+  animate = false,
+  eventId,
 }: {
   view: TableView | null;
   bb?: number;
@@ -247,12 +287,16 @@ export default function PokerTable({
   latestSeat?: number | null;
   eventKind?: string;
   dealtSeats?: number[];
+  animate?: boolean;
+  eventId?: number;
 }) {
   const count = view?.seats.length || 6;
   return (
     <section
       className={`table-stage players-${count} ${fourColor ? "four-color" : ""} ${replay ? "replay-table" : ""}`}
       data-event={eventKind}
+      data-event-id={eventId}
+      data-animate={animate}
       aria-label={replay ? "Hand replay table" : "Poker table"}
     >
       <div className="table-rail">
@@ -280,12 +324,13 @@ export default function PokerTable({
               </strong>
             </div>
             <div className="board" aria-label="Board">
-              {Array.from({ length: view.board.length || 5 }, (_, i) =>
+              {Array.from({ length: 5 }, (_, i) =>
                 view.board[i] ? (
                   <Card
                     key={view.board[i]}
                     card={view.board[i]}
                     order={i < 3 ? i : 0}
+                    animate={animate}
                   />
                 ) : (
                   <div key={`slot-${i}`} className="card-slot" />
@@ -341,6 +386,7 @@ export default function PokerTable({
                 onSelect={onSelect}
                 bb={bb}
                 complete={view.complete}
+                animate={animate}
                 dealt={
                   dealtSeats
                     ? dealtSeats.filter((seat) => seat === p.seat).length

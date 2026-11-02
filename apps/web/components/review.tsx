@@ -452,12 +452,16 @@ export default function Review({
                 </button>
               </div>
               <PokerTable
+                key={replay.hand.id}
                 view={playback.view}
                 fourColor={preferences.fourColor}
                 bb={bb}
                 replay
                 latestSeat={playback.current?.seat}
                 eventKind={playback.current?.kind}
+                eventId={playback.current?.id}
+                animate={playback.animate}
+                dealtSeats={playback.dealtSeats}
                 onSelect={() => {}}
               />
               <div className="street-tabs">

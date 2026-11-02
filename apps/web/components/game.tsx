@@ -14,7 +14,11 @@ import {
   type TableConfig,
 } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
-import { defaultPreferences, restorePreferences } from "@/lib/presentation";
+import {
+  defaultPreferences,
+  eventDuration,
+  restorePreferences,
+} from "@/lib/presentation";
 import usePresentation from "@/lib/use-presentation";
 import { unlockTableAudio } from "@/lib/table-sounds";
 import ActionDock from "./action-dock";
@@ -42,7 +46,12 @@ export default function Game() {
   const profileWrites = useRef<Promise<unknown>>(Promise.resolve());
   const profileRevision = useRef(0);
   const presentation = usePresentation(preferences, review || !!panel);
-  const { load } = presentation;
+  const {
+    load,
+    current: currentEvent,
+    animate: animating,
+    visible: tableVisible,
+  } = presentation;
 
   const apply = useCallback(
     (result: CommandResult, animate = false) => {
@@ -194,17 +203,28 @@ export default function Game() {
       !busy &&
       !presentation.pending &&
       !presentation.paused &&
+      tableVisible &&
       preferences.pace !== "manual" &&
       !error &&
       !panel &&
       !review
-    )
-      void command({ kind: "advance" });
+    ) {
+      const timer = setTimeout(
+        () => void command({ kind: "advance" }),
+        animating && currentEvent
+          ? eventDuration(currentEvent, preferences.pace)
+          : 0,
+      );
+      return () => clearTimeout(timer);
+    }
   }, [
     snapshot,
     busy,
     presentation.pending,
     presentation.paused,
+    tableVisible,
+    animating,
+    currentEvent,
     preferences.pace,
     error,
     panel,
@@ -531,6 +551,8 @@ export default function Game() {
                 latestSeat={presentation.current?.seat}
                 eventKind={presentation.current?.kind}
                 dealtSeats={presentation.dealtSeats}
+                animate={presentation.animate}
+                eventId={presentation.current?.id}
                 onSelect={(seat) => {
                   setSelectedSeat(seat);
                   setPanel("player");
@@ -608,7 +630,7 @@ export default function Game() {
       <Drawers
         panel={panel}
         onClose={() => setPanel(null)}
-        snapshot={snapshot}
+        snapshot={shownSnapshot}
         selectedSeat={selectedSeat}
         preferences={preferences}
         onPreferences={updatePreferences}

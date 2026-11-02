@@ -1802,13 +1802,10 @@ details > summary {
     translate: 0 0;
   }
 }
-.table-stage[data-event="collect"] .wager {
-  animation: none;
-}
-.table-stage[data-event="collect"] .chip-stack {
+.table-stage[data-animate="true"][data-event="collect"] .chip-stack {
   animation: collect-chips 0.4s cubic-bezier(0.4, 0, 0.7, 1) both;
 }
-.table-stage[data-event="collect"] .wager > span:last-child {
+.table-stage[data-animate="true"][data-event="collect"] .wager > span:last-child {
   animation: fade-out 0.2s ease-out both;
 }
 @keyframes fade-out {

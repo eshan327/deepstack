@@ -16,7 +16,7 @@ export default function usePresentation(
   const [visible, setVisible] = useState(true);
   const audible = useRef(false);
   const heard = useRef("");
-  const { events, index, paused, finalView } = state;
+  const { events, index, paused } = state;
   const pending = index < events.length - 1;
   const current = events[index];
   const load = useCallback(
@@ -85,16 +85,16 @@ export default function usePresentation(
     if (cue) playTableSound(cue);
   }, [current, pending, state.key, preferences.sounds, visible, suspended]);
 
-  const displayed =
-    current?.kind === "collect"
-      ? events[index - 1]?.view || current.view
-      : current?.view || state.view;
   return {
-    view: !pending ? finalView || displayed : displayed,
+    view: state.view,
+    animate: state.animate,
+    visible,
     current,
-    dealtSeats: events.slice(0, index + 1).flatMap((e) =>
-      e.kind === "deal" && e.seat != null ? [e.seat] : [],
-    ),
+    dealtSeats: events.some((e) => e.kind === "deal")
+      ? events.slice(0, index + 1).flatMap((e) =>
+          e.kind === "deal" && e.seat != null ? [e.seat] : [],
+        )
+      : undefined,
     events: events.slice(0, index + 1),
     allEvents: events,
     pending,

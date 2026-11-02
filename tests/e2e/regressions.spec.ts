@@ -349,7 +349,6 @@ for (const width of [1440, 390]) {
     const next = page.getByRole("button", { name: "Next action", exact: true });
     const table = page.getByRole("region", { name: "Poker table", exact: true });
     const cards = table.locator(".seat-1 .playing-card");
-    await next.click();
     await expect(table).toHaveAttribute("data-event", "show");
     await expect(cards).toHaveCount(2);
     await cards.evaluateAll((nodes) => {

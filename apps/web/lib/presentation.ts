@@ -42,6 +42,6 @@ export function eventDuration(event: PublicEvent, pace: Preferences["pace"]) {
   )
     duration = 1200;
   return pace === "brisk"
-    ? Math.max(100, Math.round(duration * 0.35))
+    ? Math.max(event.kind === "collect" ? 450 : 100, Math.round(duration * 0.35))
     : duration;
 }
