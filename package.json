@@ -21,7 +21,7 @@
     }
   },
   "devDependencies": {
-    "@playwright/test": "^1.56.1",
+    "@playwright/test": "^1.65.0",
     "openapi-typescript": "^7.10.1"
   }
 }
